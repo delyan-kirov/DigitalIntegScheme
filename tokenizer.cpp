@@ -9,19 +9,22 @@
 #include <fstream>
 #include <iostream>
 
-enum class TokenType {
+enum class TokenType
+{
   PAREN_L,
   PAREN_R,
   // key words
   DEFINE,
   RUN,
   ALL,
+  FIND,
   // variables
   VAR_NAME,
   VAL,
   // syntax
   NEWLINE,
   COMMA,
+  COLS,
   SEMICOLS,
   QMARK,
   // boolean algebra
@@ -30,57 +33,53 @@ enum class TokenType {
   NOT,
 };
 
-std::string printTokenType(const TokenType &type) {
+std::string
+printTokenType(const TokenType& type)
+{
   switch (type) {
-  case TokenType::PAREN_L:
-    return "PAREN_L";
-  case TokenType::PAREN_R:
-    return "PAREN_R";
-  case TokenType::DEFINE:
-    return "DEFINE";
-  case TokenType::RUN:
-    return "RUN";
-  case TokenType::ALL:
-    return "ALL";
-  case TokenType::VAR_NAME:
-    return "VAR_NAME";
-  case TokenType::VAL:
-    return "VAL";
-  case TokenType::NEWLINE:
-    return "NEWLINE";
-  case TokenType::COMMA:
-    return "COMMA";
-  case TokenType::SEMICOLS:
-    return "SEMICOLS";
-  case TokenType::QMARK:
-    return "QMARK";
-  case TokenType::AND:
-    return "AND";
-  case TokenType::OR:
-    return "OR";
-  case TokenType::NOT:
-    return "NOT";
-  default:
-    return "UNKNOWN";
+    case TokenType::PAREN_L: return "PAREN_L";
+    case TokenType::PAREN_R: return "PAREN_R";
+    case TokenType::DEFINE: return "DEFINE";
+    case TokenType::RUN: return "RUN";
+    case TokenType::FIND: return "FIND";
+    case TokenType::ALL: return "ALL";
+    case TokenType::VAR_NAME: return "VAR_NAME";
+    case TokenType::VAL: return "VAL";
+    case TokenType::NEWLINE: return "NEWLINE";
+    case TokenType::COMMA: return "COMMA";
+    case TokenType::SEMICOLS: return "SEMICOLS";
+    case TokenType::COLS: return "COLS";
+    case TokenType::QMARK: return "QMARK";
+    case TokenType::AND: return "AND";
+    case TokenType::OR: return "OR";
+    case TokenType::NOT: return "NOT";
+    default: return "UNKNOWN";
   }
 }
 
-struct Token {
+struct Token
+{
   TokenType type;
   unsigned char val;
   std::string name;
 };
 
-void printTokens(const std::vector<Token> &tokens) {
+void
+printTokens(const std::vector<Token>& tokens)
+{
   for (size_t i = 0; i < tokens.size(); ++i) {
     Token token = tokens[i];
     std::cout << "TOKEN: " << printTokenType(token.type) << ' ' << token.name
-              << ' ' << token.val << '\n';
+              << ' ';
+    if ((unsigned int)token.val != 2) std::cout << (unsigned int)token.val;
+    std::cout << std::endl;
   }
 }
 
 // FIX
-std::vector<Token> *tokenizer(std::fstream &file) {
+std::vector<Token>*
+tokenizer(std::fstream& file)
+{
   auto tokens = new std::vector<Token>;
   Token newToken;
   TokenType tokenType;
@@ -91,92 +90,78 @@ std::vector<Token> *tokenizer(std::fstream &file) {
   while (file.get(c)) {
     std::cout << c;
 
-    if (isalpha(c)) {
+    if (isalnum(c)) {
       tokenName += c;
-    } else if (c == '1') {
-      value = 1;
-      tokenType = TokenType::VAL;
-      newToken = {.type = tokenType, .val = 1, .name = ""};
-      tokens->push_back(newToken);
-    } else if (c == '0') {
-      value = 0;
-      tokenType = TokenType::VAL;
-      newToken = {.type = tokenType, .val = 0, .name = ""};
-      tokens->push_back(newToken);
     } else if (c == '&') {
-      tokenType = TokenType::AND;
-      newToken = {.type = tokenType, .val = 0, .name = ""};
+      newToken = { .type = TokenType::AND, .val = 2, .name = "" };
       tokens->push_back(newToken);
     } else if (c == '|') {
-      tokenType = TokenType::OR;
-      newToken = {.type = tokenType, .val = 0, .name = ""};
-      tokens->push_back(newToken);
-    } else if (c == '(') {
-      tokenType = TokenType::PAREN_L;
-      newToken = {.type = tokenType, .val = 0, .name = ""};
-      tokens->push_back(newToken);
-      tokenName = "";
-    } else if (c == ')') {
-      tokenType = TokenType::PAREN_R;
-      newToken = {.type = tokenType, .val = 0, .name = ""};
-      tokens->push_back(newToken);
-      tokenName = "";
-    } else if (c == '\n') {
-      tokenType = TokenType::NEWLINE;
-      newToken = {.type = tokenType, .val = 0, .name = ""};
-      tokens->push_back(newToken);
-      tokenName = "";
-    } else if (c == ',') {
-      tokenType = TokenType::COMMA;
-      newToken = {.type = tokenType, .val = 0, .name = ""};
-      tokens->push_back(newToken);
-      tokenName = "";
-    } else if (c == ':') {
-      tokenType = TokenType::SEMICOLS;
-      newToken = {.type = tokenType, .val = 0, .name = ""};
-      tokens->push_back(newToken);
-    } else if (c == '"') {
-      tokenType = TokenType::QMARK;
-      newToken = {.type = tokenType, .val = 0, .name = ""};
+      newToken = { .type = TokenType::OR, .val = 2, .name = "" };
       tokens->push_back(newToken);
     } else if (c == '!') {
-      tokenType = TokenType::NOT;
-      newToken = {.type = tokenType, .val = 0, .name = ""};
+      newToken = { .type = TokenType::NOT, .val = 2, .name = "" };
       tokens->push_back(newToken);
-    } else if (c == ' ') {
+    } else if (c == ' ' || c == '(' || c == ')' || c == ',' || c == '"' ||
+               c == ':' || c == ';' || c == '\n') {
       if (tokenName == "DEFINE") {
-        tokenType = TokenType::DEFINE;
-        newToken = {.type = tokenType, .val = 0, .name = ""};
+        newToken = { .type = TokenType::DEFINE, .val = 2, .name = "" };
         tokens->push_back(newToken);
-        tokenName = "";
       } else if (tokenName == "RUN") {
-        tokenType = TokenType::RUN;
-        newToken = {.type = tokenType, .val = 0, .name = ""};
+        newToken = { .type = TokenType::RUN, .val = 2, .name = "" };
         tokens->push_back(newToken);
-        tokenName = "";
+      } else if (tokenName == "FIND") {
+        newToken = { .type = TokenType::FIND, .val = 2, .name = "" };
+        tokens->push_back(newToken);
       } else if (tokenName == "ALL") {
-        tokenType = TokenType::ALL;
-        newToken = {.type = tokenType, .val = 0, .name = ""};
+        newToken = { .type = TokenType::ALL, .val = 2, .name = "" };
         tokens->push_back(newToken);
-        tokenName = "";
-      } else {
-        tokenType = TokenType::VAR_NAME;
-        newToken = {.type = tokenType, .val = 0, .name = tokenName};
+      } else if (tokenName != "" && tokenName != "1" && tokenName != "0") {
+        newToken = { .type = TokenType::VAR_NAME, .val = 2, .name = tokenName };
         tokens->push_back(newToken);
-        tokenName = "";
+      } else if (tokenName == "1") {
+        value = 1;
+        newToken = { .type = TokenType::VAL, .val = 1, .name = "" };
+        tokens->push_back(newToken);
+      } else if (tokenName == "0") {
+        value = 0;
+        newToken = { .type = TokenType::VAL, .val = 0, .name = "" };
+        tokens->push_back(newToken);
       }
+      tokenName = "";
     } else {
       std::cerr << "ERROR: Unrecognized token: " << c << '\n';
       exit(1);
+    }
+    if (c == '(') {
+      newToken = { .type = TokenType::PAREN_L, .val = 2, .name = "" };
+      tokens->push_back(newToken);
+    } else if (c == ')') {
+      newToken = { .type = TokenType::PAREN_R, .val = 2, .name = "" };
+      tokens->push_back(newToken);
+    } else if (c == ':') {
+      newToken = { .type = TokenType::COLS, .val = 2, .name = "" };
+      tokens->push_back(newToken);
+    } else if (c == ';') {
+      newToken = { .type = TokenType::SEMICOLS, .val = 2, .name = "" };
+      tokens->push_back(newToken);
+    } else if (c == '"') {
+      newToken = { .type = TokenType::QMARK, .val = 2, .name = "" };
+      tokens->push_back(newToken);
+    } else if (c == ',') {
+      newToken = { .type = TokenType::COMMA, .val = 2, .name = "" };
+      tokens->push_back(newToken);
+    } else if (c == '\n') {
+      newToken = { .type = TokenType::NEWLINE, .val = 2, .name = "" };
+      tokens->push_back(newToken);
     }
   }
   return tokens;
 }
 
-int main() {
+void
+test_tokenizer(const std::string& fileName)
+{
   std::cout << "TEST: tokenizer\n";
-
-  std::string fileName = "./examples/ic1.txt";
   std::fstream infile(fileName);
   if (!infile.is_open()) {
     std::cerr << "ERROR: Could not open file\n";
@@ -187,7 +172,16 @@ int main() {
 
   auto tokens = tokenizer(infile);
   printTokens(*tokens);
-  // delete[] tokens;
-  // infile.close();
+  infile.close();
+  delete tokens;
+}
+
+int
+main()
+{
+  test_tokenizer("./examples/ic1.txt");
+  test_tokenizer("./examples/ic2.txt");
+  test_tokenizer("./examples/ic3.txt");
+  test_tokenizer("./examples/find.txt");
   return 0;
 }
