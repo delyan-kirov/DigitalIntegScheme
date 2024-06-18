@@ -1,0 +1,3 @@
+DEFINE ic3(a, b, c): "a & b | c | !d"
+RUN ic3(1, 0)
+ALL ic3
