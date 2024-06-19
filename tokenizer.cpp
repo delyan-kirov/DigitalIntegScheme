@@ -1,12 +1,12 @@
+#if 0
+  g++ -g -o tokenizer tokenizer.cpp && ./tokenizer && rm ./tokenizer && exit;
+#endif // 0
+
 #include <cctype>
 #include <cstdlib>
 #include <iostream>
 #include <string>
 #include <vector>
-
-#if 0
-  g++ -g -o tokenizer tokenizer.cpp && ./tokenizer && exit;
-#endif // 0
 
 // Enum for token types
 enum class TokenType
@@ -136,7 +136,7 @@ tokenizer(FILE* file)
 }
 
 // Function to test the tokenizer
-void
+static void
 test_tokenizer(const std::string& fileName)
 {
   std::cout << "TEST: tokenizer\n";
@@ -159,13 +159,13 @@ test_tokenizer(const std::string& fileName)
   delete tokens;
 }
 
-int
-main()
-{
-  test_tokenizer("./examples/ic1.txt");
-  test_tokenizer("./examples/ic2.txt");
-  test_tokenizer("./examples/ic3.txt");
-  test_tokenizer("./examples/find.txt");
-  // test_tokenizer("");
-  return 0;
-}
+// int
+// main()
+// {
+//   test_tokenizer("./examples/ic1.txt");
+//   test_tokenizer("./examples/ic2.txt");
+//   test_tokenizer("./examples/ic3.txt");
+//   test_tokenizer("./examples/find.txt");
+//   // test_tokenizer("");
+//   return 0;
+// }
