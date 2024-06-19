@@ -1,38 +1,35 @@
 #include <cctype>
 #include <cstdlib>
+#include <iostream>
 #include <string>
 #include <vector>
+
 #if 0
   g++ -g -o tokenizer tokenizer.cpp && ./tokenizer && exit;
 #endif // 0
 
-#include <fstream>
-#include <iostream>
-
+// Enum for token types
 enum class TokenType
 {
   PAREN_L,
   PAREN_R,
-  // key words
   DEFINE,
   RUN,
   ALL,
   FIND,
-  // variables
   VAR_NAME,
   VAL,
-  // syntax
   NEWLINE,
   COMMA,
   COLS,
   SEMICOLS,
   QMARK,
-  // boolean algebra
   AND,
   OR,
   NOT,
 };
 
+// Function to print token type as a string
 std::string
 printTokenType(const TokenType& type)
 {
@@ -47,8 +44,8 @@ printTokenType(const TokenType& type)
     case TokenType::VAL: return "VAL";
     case TokenType::NEWLINE: return "NEWLINE";
     case TokenType::COMMA: return "COMMA";
-    case TokenType::SEMICOLS: return "SEMICOLS";
     case TokenType::COLS: return "COLS";
+    case TokenType::SEMICOLS: return "SEMICOLS";
     case TokenType::QMARK: return "QMARK";
     case TokenType::AND: return "AND";
     case TokenType::OR: return "OR";
@@ -57,6 +54,7 @@ printTokenType(const TokenType& type)
   }
 }
 
+// Struct for tokens
 struct Token
 {
   TokenType type;
@@ -64,6 +62,7 @@ struct Token
   std::string name;
 };
 
+// Function to print tokens
 void
 printTokens(const std::vector<Token>& tokens)
 {
@@ -76,103 +75,87 @@ printTokens(const std::vector<Token>& tokens)
   }
 }
 
-// FIX
+// Function to tokenize the input file
 std::vector<Token>*
-tokenizer(std::fstream& file)
+tokenizer(FILE* file)
 {
   auto tokens = new std::vector<Token>;
   Token newToken;
-  TokenType tokenType;
   std::string tokenName;
-  unsigned char value;
 
-  char c;
-  while (file.get(c)) {
-    std::cout << c;
-
+  int c;
+  while ((c = fgetc(file)) != EOF) {
+    std::cout << (char)c;
     if (isalnum(c)) {
-      tokenName += c;
+      tokenName += (char)c;
     } else if (c == '&') {
-      newToken = { .type = TokenType::AND, .val = 2, .name = "" };
-      tokens->push_back(newToken);
+      tokens->push_back({ TokenType::AND, 2, "" });
     } else if (c == '|') {
-      newToken = { .type = TokenType::OR, .val = 2, .name = "" };
-      tokens->push_back(newToken);
+      tokens->push_back({ TokenType::OR, 2, "" });
     } else if (c == '!') {
-      newToken = { .type = TokenType::NOT, .val = 2, .name = "" };
-      tokens->push_back(newToken);
+      tokens->push_back({ TokenType::NOT, 2, "" });
     } else if (c == ' ' || c == '(' || c == ')' || c == ',' || c == '"' ||
                c == ':' || c == ';' || c == '\n') {
       if (tokenName == "DEFINE") {
-        newToken = { .type = TokenType::DEFINE, .val = 2, .name = "" };
-        tokens->push_back(newToken);
+        tokens->push_back({ TokenType::DEFINE, 2, "" });
       } else if (tokenName == "RUN") {
-        newToken = { .type = TokenType::RUN, .val = 2, .name = "" };
-        tokens->push_back(newToken);
+        tokens->push_back({ TokenType::RUN, 2, "" });
       } else if (tokenName == "FIND") {
-        newToken = { .type = TokenType::FIND, .val = 2, .name = "" };
-        tokens->push_back(newToken);
+        tokens->push_back({ TokenType::FIND, 2, "" });
       } else if (tokenName == "ALL") {
-        newToken = { .type = TokenType::ALL, .val = 2, .name = "" };
-        tokens->push_back(newToken);
+        tokens->push_back({ TokenType::ALL, 2, "" });
       } else if (tokenName != "" && tokenName != "1" && tokenName != "0") {
-        newToken = { .type = TokenType::VAR_NAME, .val = 2, .name = tokenName };
-        tokens->push_back(newToken);
+        tokens->push_back({ TokenType::VAR_NAME, 2, tokenName });
       } else if (tokenName == "1") {
-        value = 1;
-        newToken = { .type = TokenType::VAL, .val = 1, .name = "" };
-        tokens->push_back(newToken);
+        tokens->push_back({ TokenType::VAL, 1, "" });
       } else if (tokenName == "0") {
-        value = 0;
-        newToken = { .type = TokenType::VAL, .val = 0, .name = "" };
-        tokens->push_back(newToken);
+        tokens->push_back({ TokenType::VAL, 0, "" });
       }
       tokenName = "";
     } else {
-      std::cerr << "ERROR: Unrecognized token: " << c << '\n';
+      std::cerr << "ERROR: Unrecognized token: " << (char)c << '\n';
       exit(1);
     }
     if (c == '(') {
-      newToken = { .type = TokenType::PAREN_L, .val = 2, .name = "" };
-      tokens->push_back(newToken);
+      tokens->push_back({ TokenType::PAREN_L, 2, "" });
     } else if (c == ')') {
-      newToken = { .type = TokenType::PAREN_R, .val = 2, .name = "" };
-      tokens->push_back(newToken);
+      tokens->push_back({ TokenType::PAREN_R, 2, "" });
     } else if (c == ':') {
-      newToken = { .type = TokenType::COLS, .val = 2, .name = "" };
-      tokens->push_back(newToken);
+      tokens->push_back({ TokenType::COLS, 2, "" });
     } else if (c == ';') {
-      newToken = { .type = TokenType::SEMICOLS, .val = 2, .name = "" };
-      tokens->push_back(newToken);
+      tokens->push_back({ TokenType::SEMICOLS, 2, "" });
     } else if (c == '"') {
-      newToken = { .type = TokenType::QMARK, .val = 2, .name = "" };
-      tokens->push_back(newToken);
+      tokens->push_back({ TokenType::QMARK, 2, "" });
     } else if (c == ',') {
-      newToken = { .type = TokenType::COMMA, .val = 2, .name = "" };
-      tokens->push_back(newToken);
+      tokens->push_back({ TokenType::COMMA, 2, "" });
     } else if (c == '\n') {
-      newToken = { .type = TokenType::NEWLINE, .val = 2, .name = "" };
-      tokens->push_back(newToken);
+      tokens->push_back({ TokenType::NEWLINE, 2, "" });
     }
   }
   return tokens;
 }
 
+// Function to test the tokenizer
 void
 test_tokenizer(const std::string& fileName)
 {
   std::cout << "TEST: tokenizer\n";
-  std::fstream infile(fileName);
-  if (!infile.is_open()) {
-    std::cerr << "ERROR: Could not open file\n";
-    exit(1);
+  FILE* infile;
+  if (fileName.empty()) {
+    infile = stdin; // Use stdin if no file name is provided
   } else {
-    std::cout << "INFO: File successfully loaded\n";
+    infile = fopen(fileName.c_str(), "r");
+    if (infile == NULL) {
+      std::cerr << "ERROR: Could not open file\n";
+      exit(1);
+    } else {
+      std::cout << "INFO: File successfully loaded\n";
+    }
   }
 
   auto tokens = tokenizer(infile);
   printTokens(*tokens);
-  infile.close();
+  if (infile != stdin) { fclose(infile); }
   delete tokens;
 }
 
@@ -183,5 +166,6 @@ main()
   test_tokenizer("./examples/ic2.txt");
   test_tokenizer("./examples/ic3.txt");
   test_tokenizer("./examples/find.txt");
+  // test_tokenizer("");
   return 0;
 }
