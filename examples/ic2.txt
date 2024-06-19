@@ -1,4 +1,4 @@
-DEFINE ic2(a, b): "a & b"
+DEFINE ic2(a, b, c, d): "a & (b | c) & !d"
 RUN ic2(1, 0)
 ALL ic2
 
