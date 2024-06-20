@@ -16,6 +16,7 @@ enum class TokenType
   RUN,
   ALL,
   FIND,
+  CLEAR,
   VAR_NAME,
   VAL,
   NEWLINE,

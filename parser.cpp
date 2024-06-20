@@ -3,18 +3,84 @@
 #include <cstdlib>
 #include <iostream>
 #include <string>
+#include <utility>
 #include <vector>
 #if 0
   g++ -g -o parser parser.cpp tokenizer.cpp && ./parser && rm ./parser && exit;
 #endif // 0
 
+enum class OperationType
+{
+  AND,
+  OR,
+  NOT,
+};
+
+size_t
+powerOf(size_t a, size_t b)
+{
+  size_t result = 1;
+  while (b > 0) {
+    result *= a;
+    b--;
+  }
+  return result;
+}
+
+OperationType
+tokenToOpType(const TokenType& tokenType)
+{
+  switch (tokenType) {
+    case TokenType::OR: return OperationType::OR;
+    case TokenType::AND: return OperationType::AND;
+    case TokenType::NOT: return OperationType::NOT;
+    default: {
+      std::cerr << "PARSE ERROR: expected operation | & or !, found token "
+                << printTokenType(tokenType);
+      return OperationType::NOT;
+    }
+  }
+}
+
+enum class AlgebraType
+{
+  VALUE,
+  OPERATION,
+  VARIABLE,
+  NONE // Default state
+};
+
+struct Algebra
+{
+  AlgebraType type;
+  unsigned char value;
+  OperationType operation;
+  std::string variable;
+};
+
+std::string
+printAlgebraType(const Algebra& val)
+{
+  switch (val.type) {
+    case AlgebraType::VALUE: return std::to_string(val.value);
+    case AlgebraType::OPERATION:
+      switch (val.operation) {
+        case OperationType::AND: return "&";
+        case OperationType::OR: return "|";
+        case OperationType::NOT: return "!";
+      }
+    case AlgebraType::VARIABLE: return val.variable;
+    default: return "Unknown AlgebraType";
+  }
+}
+
 struct SynTree
 {
-  std::string val; // Changed to string to handle different types of nodes
+  Algebra val;
   SynTree* left;
   SynTree* right;
 
-  SynTree(const std::string& value,
+  SynTree(const Algebra& value,
           SynTree* leftNode = nullptr,
           SynTree* rightNode = nullptr)
     : val(value)
@@ -41,6 +107,17 @@ struct Table
   std::vector<unsigned char> input = std::vector<unsigned char>();
   std::vector<unsigned char> output = std::vector<unsigned char>();
 };
+
+void
+printSyntaxTree(const SynTree* node, int depth = 0)
+{
+  if (!node) return;
+  for (int i = 0; i < depth; ++i)
+    std::cout << "  ";
+  std::cout << printAlgebraType(node->val) << "\n";
+  printSyntaxTree(node->left, depth + 1);
+  printSyntaxTree(node->right, depth + 1);
+}
 
 void
 printTable(const Table& table)
@@ -81,12 +158,11 @@ struct Command
   std::vector<std::string> arguments;
   std::vector<unsigned char> values;
   Table table;
-  size_t nameSpaceIdx = 0;
   std::string name = nullptr;
 };
 
-size_t nameSpaceIdx = 0;
-std::vector<SynTree*> programNameSpace;
+std::vector<std::pair<std::vector<std::string>, SynTree*>> programNameSpace;
+std::vector<std::string> programNameSpaceKey;
 
 SynTree*
 parseExpression(const std::vector<Token>& tokens, size_t& idx);
@@ -99,12 +175,21 @@ parseFactor(const std::vector<Token>& tokens, size_t& idx)
   if (idx >= tokens.size()) { return nullptr; }
 
   Token token = tokens[idx];
+
   if (token.type == TokenType::VAR_NAME) {
     idx++;
-    return new SynTree(token.name);
+    Algebra varName;
+    varName.type = AlgebraType::VARIABLE;
+    varName.variable = token.name;
+    return new SynTree(varName);
+
   } else if (token.type == TokenType::VAL) {
     idx++; // Skip '('
-    return new SynTree(std::to_string(token.val));
+    Algebra value;
+    value.type = AlgebraType::VALUE;
+    value.value = token.val;
+    return new SynTree(value);
+
   } else if (token.type == TokenType::PAREN_L) {
     idx++; // Skip '('
     SynTree* expr = parseExpression(tokens, idx);
@@ -114,10 +199,15 @@ parseFactor(const std::vector<Token>& tokens, size_t& idx)
     }
     idx++; // Skip ')'
     return expr;
+
   } else if (token.type == TokenType::NOT) {
     idx++; // Skip '!'
     SynTree* factor = parseFactor(tokens, idx);
-    return new SynTree("!", nullptr, factor);
+    Algebra operation;
+    operation.type = AlgebraType::OPERATION;
+    operation.operation = OperationType::NOT;
+    return new SynTree(operation, nullptr, factor);
+
   } else {
     std::cerr << "SYNTAX ERROR: Unexpected token in parseFactor: "
               << printTokenType(token.type) << '\n';
@@ -139,7 +229,10 @@ parseTerm(const std::vector<Token>& tokens, size_t& idx)
       std::cerr << "SYNTAX ERROR: Failed to parse right factor in parseTerm\n";
       return nullptr;
     }
-    node = new SynTree("&", node, right);
+    Algebra operation;
+    operation.type = AlgebraType::OPERATION;
+    operation.operation = OperationType::AND;
+    node = new SynTree(operation, node, right);
   }
   return node;
 }
@@ -163,31 +256,19 @@ parseExpression(const std::vector<Token>& tokens, size_t& idx)
         << "SYNTAX ERROR: Failed to parse right term in parseExpression\n";
       return nullptr;
     }
-    node = new SynTree("|", node, right);
+    Algebra operation;
+    operation.type = AlgebraType::OPERATION;
+    operation.operation = OperationType::OR;
+    node = new SynTree(operation, node, right);
   }
   return node;
-}
-
-void
-printSyntaxTree(const SynTree* node, int depth = 0)
-{
-  if (!node) return;
-  for (int i = 0; i < depth; ++i)
-    std::cout << "  ";
-  std::cout << node->val << "\n";
-  printSyntaxTree(node->left, depth + 1);
-  printSyntaxTree(node->right, depth + 1);
 }
 
 Command
 parseFindCommand(const std::vector<Token>& tokens, size_t& idx)
 {
   CommandType commandType = CommandType::FIND;
-  std::vector<unsigned char>* values = new std::vector<unsigned char>();
-  std::vector<std::string>* arguments = new std::vector<std::string>();
-  Table* table = new Table();
-  std::string definitionName;
-  SynTree* definition;
+  Table* table = new Table;
 
   size_t canEnd = 0;
   std::vector<unsigned char>* output = new std::vector<unsigned char>();
@@ -248,22 +329,189 @@ parseFindCommand(const std::vector<Token>& tokens, size_t& idx)
 
   table->N = table->input.size() / table->output.size();
   table->M = table->output.size();
-  printTable(*table); // DEBUG
 
-  return Command{ definition, CommandType::FIND, *arguments,    *values,
-                  *table,     nameSpaceIdx++,    definitionName };
+  printTable(*table); // DEBUG
+  if (powerOf(2, table->N) != table->M) {
+    std::cerr
+      << "PARSE ERROR: the table defined with FIND command is invalid\n";
+    return Command{ nullptr };
+  };
+
+  return Command{ .type = CommandType::FIND, .table = *table, .name = "" };
+}
+
+Command
+parseDefCommand(const std::vector<Token>& tokens, size_t& idx)
+{
+  CommandType commandType = CommandType::DEFINE;
+  std::vector<std::string>* arguments = new std::vector<std::string>;
+  std::string definitionName;
+  SynTree* definition;
+
+  if (tokens.at(idx++).type != TokenType::VAR_NAME) {
+    const TokenType currTokenType = tokens.at(idx).type;
+    std::cerr << "SYNTAX ERROR: definition name expected, found: "
+              << printTokenType(currTokenType) << '\n';
+    return Command{ nullptr };
+  } else {
+    definitionName = tokens.at(idx - 1).name;
+  }
+
+  if (tokens.at(idx++).type != TokenType::PAREN_L) {
+    const TokenType currTokenType = tokens.at(idx).type;
+    std::cerr << "SYNTAX ERROR: left parenthesis expected, found: "
+              << printTokenType(currTokenType) << '\n';
+    return Command{ nullptr };
+  }
+
+  for (;;) {
+    if (idx >= tokens.size()) {
+      std::cerr
+        << "SYNTAX ERROR: Unexpected end of tokens in DEFINE arguments\n";
+      return Command{ nullptr };
+    }
+    auto tokenType = tokens.at(idx).type;
+    if (tokenType == TokenType::VAR_NAME) {
+      const std::string arg = tokens.at(idx).name;
+      arguments->push_back(arg);
+      idx++; // Move to the next token after pushing into arguments
+    } else if (tokenType == TokenType::COMMA) {
+      idx++; // Move past the comma token
+      continue;
+    } else if (tokenType == TokenType::PAREN_R) {
+      idx++; // Move past the closing parenthesis token
+      break;
+    } else {
+      std::cerr << "SYNTAX ERROR: unexpected token found: "
+                << printTokenType(tokenType) << '\n';
+      return Command{ nullptr };
+    }
+  }
+
+  if (tokens.at(idx++).type != TokenType::COLS) {
+    const TokenType currTokenType = tokens.at(idx).type;
+    std::cerr << "SYNTAX ERROR: columns expected, found: "
+              << printTokenType(currTokenType) << ' ' << tokens.at(idx).name
+              << '\n';
+    return Command{ nullptr };
+  }
+
+  if (tokens.at(idx++).type != TokenType::QMARK) {
+    const TokenType currTokenType = tokens.at(idx).type;
+    std::cerr << "SYNTAX ERROR: Expected \" , found: "
+              << printTokenType(currTokenType) << ' ' << tokens.at(idx).name
+              << '\n';
+    return Command{ nullptr };
+  }
+
+  // Parse the syntax tree definition
+  definition = parseExpression(tokens, idx);
+
+  if (tokens.at(idx++).type != TokenType::QMARK) {
+    const TokenType currTokenType = tokens.at(idx).type;
+    std::cerr << "SYNTAX ERROR: Expected \" , found: "
+              << printTokenType(currTokenType) << ' ' << tokens.at(idx).name
+              << '\n';
+    return Command{ nullptr };
+  }
+
+  if (!definition) {
+    std::cerr << "SYNTAX ERROR: failed to parse syntax tree\n";
+    return Command{
+      nullptr,
+    };
+  }
+
+  printSyntaxTree(definition);
+  programNameSpace.push_back(std::pair(*arguments, definition));
+  programNameSpaceKey.push_back(definitionName);
+  return Command{ .definition = definition,
+                  .type = CommandType::DEFINE,
+                  .arguments = *arguments,
+                  .name = definitionName };
+}
+
+Command
+parseRunCommand(const std::vector<Token>& tokens, size_t& idx)
+{
+  if (tokens.at(idx).type != TokenType::VAR_NAME) {
+    const TokenType currTokenType = tokens.at(idx).type;
+    std::cerr << "SYNTAX ERROR: definition name expected, found: "
+              << printTokenType(currTokenType) << '\n';
+    return Command{ nullptr };
+  }
+
+  std::string definitionName = tokens.at(idx++).name;
+  std::vector<unsigned char> values;
+
+  // Check for left parenthesis
+  if (tokens.at(idx++).type != TokenType::PAREN_L) {
+    const TokenType currTokenType = tokens.at(idx).type;
+    std::cerr << "SYNTAX ERROR: left parenthesis expected, found: "
+              << printTokenType(currTokenType) << '\n';
+    return Command{ nullptr };
+  }
+
+  // Parse arguments
+  while (tokens.at(idx).type != TokenType::PAREN_R) {
+    if (idx >= tokens.size()) {
+      std::cerr << "SYNTAX ERROR: Unexpected end of tokens in RUN arguments\n";
+      return Command{ nullptr };
+    }
+
+    if (tokens.at(idx).type == TokenType::VAL) {
+      values.push_back(tokens.at(idx).val);
+      idx++;
+    } else if (tokens.at(idx).type == TokenType::COMMA) {
+      idx++; // Skip comma
+    } else {
+      std::cerr << "SYNTAX ERROR: unexpected token found: "
+                << printTokenType(tokens.at(idx).type) << '\n';
+      return Command{ nullptr };
+    }
+  }
+
+  // Move past the closing parenthesis
+  idx++;
+
+  // Check for end of line
+  if (tokens.at(idx++).type != TokenType::NEWLINE) {
+    std::cerr << "SYNTAX ERROR: Expected end of line, found: "
+              << printTokenType(tokens.at(idx - 1).type) << ' '
+              << tokens.at(idx - 1).name << '\n';
+    return Command{ nullptr };
+  }
+
+  // for (auto i : values) {
+  //   std::cout << (size_t)i << ' ';
+  // }
+  // std::cout << values.size();
+
+  // Return Command object
+  return Command{ .type = CommandType::RUN, .values = values, .name = "" };
+}
+
+Command
+parseAllCommand(const std::vector<Token>& tokens, size_t& idx)
+{
+  if (tokens.at(idx).type != TokenType::VAR_NAME) {
+    std::cerr << "SYNTAX ERROR: definition name expected, found: "
+              << printTokenType(tokens.at(idx).type) << '\n';
+    return Command{ nullptr };
+  }
+
+  std::string name = tokens.at(idx++).name;
+  SynTree* definition = nullptr;
+
+  return Command{ .definition = definition,
+                  .type = CommandType::ALL,
+                  .name = name };
 }
 
 Command
 parser(std::vector<Token>* tokens)
 {
-  CommandType commandType;
-  auto values = new std::vector<unsigned char>;
-  auto arguments = new std::vector<std::string>;
-  auto table = new Table;
-  std::string definitionName;
   size_t idx = 0;
-  SynTree* definition;
 
   if (idx >= tokens->size()) {
     std::cerr << "SYNTAX ERROR: No command found\n";
@@ -274,179 +522,43 @@ parser(std::vector<Token>* tokens)
 
   switch (commandTypeRaw) {
     case TokenType::DEFINE: {
-
-      commandType = CommandType::DEFINE;
-
-      if (tokens->at(idx++).type != TokenType::VAR_NAME) {
-        const TokenType currTokenType = tokens->at(idx).type;
-        std::cerr << "SYNTAX ERROR: definition name expected, found: "
-                  << printTokenType(currTokenType) << '\n';
-        return Command{ nullptr };
-      } else {
-        definitionName = tokens->at(idx - 1).name;
-      }
-
-      if (tokens->at(idx++).type != TokenType::PAREN_L) {
-        const TokenType currTokenType = tokens->at(idx).type;
-        std::cerr << "SYNTAX ERROR: left parenthesis expected, found: "
-                  << printTokenType(currTokenType) << '\n';
-        return Command{ nullptr };
-      }
-
-      for (;;) {
-        if (idx >= tokens->size()) {
-          std::cerr
-            << "SYNTAX ERROR: Unexpected end of tokens in DEFINE arguments\n";
-          return Command{ nullptr };
-        }
-        auto tokenType = tokens->at(idx).type;
-        if (tokenType == TokenType::VAR_NAME) {
-          const std::string arg = tokens->at(idx).name;
-          arguments->push_back(arg);
-          idx++; // Move to the next token after pushing into arguments
-        } else if (tokenType == TokenType::COMMA) {
-          idx++; // Move past the comma token
-          continue;
-        } else if (tokenType == TokenType::PAREN_R) {
-          idx++; // Move past the closing parenthesis token
-          break;
-        } else {
-          std::cerr << "SYNTAX ERROR: unexpected token found: "
-                    << printTokenType(tokenType) << '\n';
-          return Command{ nullptr };
-        }
-      }
-
-      if (tokens->at(idx++).type != TokenType::COLS) {
-        const TokenType currTokenType = tokens->at(idx).type;
-        std::cerr << "SYNTAX ERROR: columns expected, found: "
-                  << printTokenType(currTokenType) << ' '
-                  << tokens->at(idx).name << '\n';
-        return Command{ nullptr };
-      }
-
-      if (tokens->at(idx++).type != TokenType::QMARK) {
-        const TokenType currTokenType = tokens->at(idx).type;
-        std::cerr << "SYNTAX ERROR: Expected \" , found: "
-                  << printTokenType(currTokenType) << ' '
-                  << tokens->at(idx).name << '\n';
-        return Command{ nullptr };
-      }
-
-      // Parse the syntax tree definition
-      definition = parseExpression(*tokens, idx);
-
-      if (tokens->at(idx++).type != TokenType::QMARK) {
-        const TokenType currTokenType = tokens->at(idx).type;
-        std::cerr << "SYNTAX ERROR: Expected \" , found: "
-                  << printTokenType(currTokenType) << ' '
-                  << tokens->at(idx).name << '\n';
-        return Command{ nullptr };
-      }
-
-      if (!definition) {
-        std::cerr << "SYNTAX ERROR: failed to parse syntax tree\n";
-        return Command{
-          nullptr,
-        };
-      }
-
-      printSyntaxTree(definition);
-      programNameSpace.push_back(definition);
-      return Command{ definition, CommandType::DEFINE, *arguments,    *values,
-                      *table,     nameSpaceIdx++,      definitionName };
-    }
-
-    break; // end case: TokenType::DEFINE
+      return parseDefCommand(*tokens, idx);
+    } break; // END DEFINE
 
     case TokenType::RUN: {
-      commandType = CommandType::RUN;
-
-      if (tokens->at(idx++).type != TokenType::VAR_NAME) {
-        const TokenType currTokenType = tokens->at(idx).type;
-        std::cerr << "SYNTAX ERROR: definition name expected, found: "
-                  << printTokenType(currTokenType) << '\n';
-        return Command{ nullptr };
-      } else {
-        definitionName = tokens->at(idx - 1).name;
-      }
-
-      if (tokens->at(idx++).type != TokenType::PAREN_L) {
-        const TokenType currTokenType = tokens->at(idx).type;
-        std::cerr << "SYNTAX ERROR: left parenthesis expected, found: "
-                  << printTokenType(currTokenType) << '\n';
-        return Command{ nullptr };
-      }
-
-      for (;;) { // TODO chech if commas are in the right place
-        if (idx >= tokens->size()) {
-          std::cerr
-            << "SYNTAX ERROR: Unexpected end of tokens in RUN arguments\n";
-          return Command{ nullptr };
-        }
-        auto tokenType = tokens->at(idx).type;
-        if (tokenType == TokenType::VAL) {
-          const unsigned char arg = tokens->at(idx).val;
-          values->push_back(arg);
-          idx++; // Move to the next token after pushing into arguments
-        } else if (tokenType == TokenType::COMMA) {
-          idx++; // Move past the comma token
-          continue;
-        } else if (tokenType == TokenType::PAREN_R) {
-          idx++; // Move past the closing parenthesis token
-          break;
-        } else {
-          std::cerr << "SYNTAX ERROR: unexpected token found: "
-                    << printTokenType(tokenType) << '\n';
-          return Command{ nullptr };
-        }
-      }
-
-      if (tokens->at(idx++).type != TokenType::NEWLINE) {
-        std::cerr << "SYNTAX ERROR: Expected end of line, found: "
-                  << printTokenType(tokens->at(idx).type) << ' '
-                  << tokens->at(idx).name << '\n';
-        return Command{ nullptr };
-      }
-
-      return Command{ definition, CommandType::RUN, *arguments,    *values,
-                      *table,     nameSpaceIdx++,   definitionName };
-    }
-
-    break; // end RUN
+      return parseRunCommand(*tokens, idx);
+    } break; // END RUN
 
     case TokenType::ALL: {
-      commandType = CommandType::ALL;
-
-      if (tokens->at(idx++).type != TokenType::VAR_NAME) {
-        std::cerr << "SYNTAX ERROR: definition name expected, found: "
-                  << printTokenType(tokens->at(idx).type) << '\n';
-        return Command{ nullptr };
-      } else {
-        definitionName = tokens->at(idx - 1).name;
-      }
-
-      return Command{ definition, CommandType::RUN, *arguments,    *values,
-                      *table,     nameSpaceIdx++,   definitionName };
+      return parseAllCommand(*tokens, idx);
     } break; // end ALL
 
     case TokenType::FIND: {
       return parseFindCommand(*tokens, idx);
     } break; // END FIND
 
-    case TokenType::NEWLINE: commandType = CommandType::FIND; break;
+    case TokenType::NEWLINE: {
+      return Command{ .type = CommandType::TRIVIAL };
+    } break; // END NEWLINE
+
+    case TokenType::CLEAR: {
+      return Command{ .type = CommandType::CLEAR };
+    } break; // CLEAR
 
     default:
-      std::cerr << "SYNTAX ERROR: Command must start with DEFINE, RUN or ALL\n";
+      std::cerr << "SYNTAX ERROR: Command must start with DEFINE, RUN, CLEAR "
+                   "or ALL\n";
       return Command{ nullptr };
   }
-  return Command{ nullptr };
 }
+
+// TODO: Make tests
+// TODO: Handle memory
 
 int
 main()
 {
-  std::string fileName = "./examples/find.txt";
+  std::string fileName = "./examples/ic2.txt";
   FILE* infile;
   infile = fopen(fileName.c_str(), "r");
   if (infile == NULL) {
@@ -460,6 +572,9 @@ main()
   // printTokens(*tokens);
   parser(tokens);
   fclose(infile);
+  printSyntaxTree(programNameSpace.at(0).second);
+  for (auto i : programNameSpace.at(0).first)
+    std::cout << i << ' ';
   delete tokens;
   return 0;
 }

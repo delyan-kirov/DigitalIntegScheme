@@ -17,6 +17,7 @@ enum class TokenType
   RUN,
   ALL,
   FIND,
+  CLEAR,
   VAR_NAME,
   VAL,
   NEWLINE,
@@ -39,6 +40,7 @@ printTokenType(const TokenType& type)
     case TokenType::DEFINE: return "DEFINE";
     case TokenType::RUN: return "RUN";
     case TokenType::FIND: return "FIND";
+    case TokenType::CLEAR: return "CLEAR";
     case TokenType::ALL: return "ALL";
     case TokenType::VAR_NAME: return "VAR_NAME";
     case TokenType::VAL: return "VAL";
@@ -102,6 +104,8 @@ tokenizer(FILE* file)
         tokens->push_back({ TokenType::RUN, 2, "" });
       } else if (tokenName == "FIND") {
         tokens->push_back({ TokenType::FIND, 2, "" });
+      } else if (tokenName == "CLEAR") {
+        tokens->push_back({ TokenType::CLEAR, 2, "" });
       } else if (tokenName == "ALL") {
         tokens->push_back({ TokenType::ALL, 2, "" });
       } else if (tokenName != "" && tokenName != "1" && tokenName != "0") {
