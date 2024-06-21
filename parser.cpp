@@ -1,5 +1,6 @@
 #include "tokenizer.h"
 #include <cstddef>
+#include <cstdio>
 #include <cstdlib>
 #include <iostream>
 #include <string>
@@ -270,7 +271,42 @@ parseFindCommand(const std::vector<Token>& tokens, size_t& idx)
   size_t canEnd = 0;
   std::vector<unsigned char>* output = new std::vector<unsigned char>();
 
+  // Check for file first
+  if (idx < tokens.size() && tokens.at(idx).type == TokenType::QMARK) {
+    if (tokens.at(++idx).type != TokenType::VAR_NAME) {
+      std::cerr << "SYNTAX ERROR: expected file name. Found: "
+                << printTokenType(tokens.at(idx).type) << '\n';
+      return Command{ nullptr };
+    }
+    if (tokens.at(idx + 1).type != TokenType::QMARK) {
+      std::cerr << "SYNTAX ERROR: expected closing of \". Found: "
+                << printTokenType(tokens.at(idx).type) << '\n';
+      return Command{ nullptr };
+    }
+    std::string fileName = "./csvFiles/" + tokens.at(idx).name;
+    FILE* file = fopen(fileName.c_str(), "r");
+    if (file == nullptr) {
+      std::cerr << "ERROR: could not open file: " << fileName << '\n';
+      return Command{ nullptr };
+    }
+    std::vector<Token>* tokens = tokenizer(file);
+    idx += 2; // must move the index forward twice
+    size_t newIdx = 0;
+    return parseFindCommand(*tokens, newIdx);
+  }
+
   while (idx < tokens.size()) {
+    // Make special chech when i is zero initially
+    if (idx == 0) {
+      if (tokens.at(idx).type != TokenType::VAL ||
+          (tokens.at(idx).val != 0 && tokens.at(idx).val != 1)) {
+        std::cerr << "SYNTAX ERROR: value 0 or 1 expected, found: "
+                  << printTokenType(tokens.at(idx).type) << '\n';
+        return Command{ nullptr };
+      }
+      table->input.push_back(tokens.at(idx).val);
+      idx += 2;
+    }
     // Ensure the token is a VAL and it is either 0 or 1
     if (tokens.at(idx).type != TokenType::VAL ||
         (tokens.at(idx).val != 0 && tokens.at(idx).val != 1)) {
@@ -553,7 +589,7 @@ parser(size_t idx, std::vector<Token>* tokens)
 // int
 // main()
 // {
-//   std::string fileName = "./examples/ic2.txt";
+//   std::string fileName = "./examples/findWithFile.txt";
 //   FILE* infile;
 //   infile = fopen(fileName.c_str(), "r");
 //   if (infile == NULL) {
@@ -565,7 +601,8 @@ parser(size_t idx, std::vector<Token>* tokens)
 //
 //   std::vector<Token>* tokens = tokenizer(infile);
 //   printTokens(*tokens);
-//   parser(tokens);
+//   size_t newIdx = 0;
+//   parser(newIdx, tokens);
 //   fclose(infile);
 //   delete tokens;
 //   return 0;

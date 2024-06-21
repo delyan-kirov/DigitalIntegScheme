@@ -88,7 +88,7 @@ tokenizer(FILE* file)
   int c;
   while ((c = fgetc(file)) != EOF) {
     std::cout << (char)c;
-    if (isalnum(c)) {
+    if (isalnum(c) || c == '.') {
       tokenName += (char)c;
     } else if (c == '&') {
       tokens->push_back({ TokenType::AND, 2, "" });
@@ -166,10 +166,11 @@ test_tokenizer(const std::string& fileName)
 // int
 // main()
 // {
-//   test_tokenizer("./examples/ic1.txt");
-//   test_tokenizer("./examples/ic2.txt");
-//   test_tokenizer("./examples/ic3.txt");
-//   test_tokenizer("./examples/find.txt");
+//   // test_tokenizer("./examples/ic1.txt");
+//   // test_tokenizer("./examples/ic2.txt");
+//   // test_tokenizer("./examples/ic3.txt");
+//   // test_tokenizer("./examples/find.txt");
+//   test_tokenizer("./examples/findWithFile.csv");
 //   // test_tokenizer("");
 //   return 0;
 // }

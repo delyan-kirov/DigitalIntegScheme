@@ -1,6 +1,5 @@
 #include "parser.h"
 #include "tokenizer.h"
-#include <algorithm>
 #include <cstddef>
 #include <cstdlib>
 #include <fstream>
@@ -328,7 +327,7 @@ interperate(Command command)
 int
 main()
 {
-  std::string fileName = "./examples/find.txt";
+  std::string fileName = "./examples/findWithFile.txt";
   FILE* infile;
   infile = fopen(fileName.c_str(), "r");
   // infile = fopen("/dev/stdin", "r"); // Open stdin for reading
@@ -345,6 +344,7 @@ main()
 
   for (;;) {
     command = parser(command.first, tokens);
+    if (command.second.type == CommandType::TRIVIAL) continue;
     interperate(command.second);
   }
 
