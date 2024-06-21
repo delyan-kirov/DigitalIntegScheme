@@ -1,7 +1,9 @@
 #include "parser.h"
 #include "tokenizer.h"
+#include <algorithm>
 #include <cstddef>
 #include <cstdlib>
+#include <fstream>
 #include <iostream>
 #include <optional>
 #include <string>
@@ -26,9 +28,9 @@ evaluateSynTree(SynTree* node,
                 const std::vector<unsigned char>& values)
 {
   if (!node) {
-
-    std::cerr << "EVALUATION ERROR: definition is malformed\n";
-    return std::nullopt;
+    // std::cerr << "EVALUATION ERROR: definition is malformed\n";
+    // return std::nullopt;
+    return 0;
   }
 
   if (node->val.type == AlgebraType::VALUE) {
@@ -46,7 +48,7 @@ evaluateSynTree(SynTree* node,
     switch (node->val.operation) {
       case OperationType::AND: return leftValue & rightValue;
       case OperationType::OR: return leftValue | rightValue;
-      case OperationType::NOT: return !leftValue;
+      case OperationType::NOT: return !rightValue;
       default: return std::nullopt;
     }
 
@@ -71,24 +73,22 @@ evaluateAndPrintAll(const std::string& name,
   size_t numArgs = argNames.size();
   std::vector<unsigned char> argumentValues(numArgs, 0);
 
-  std::cout << "Evaluating command: " << name << "\n";
+  std::cout << "EVALUATION ALL: " << name << "\n";
 
   // Generate all possible combinations of values for the arguments
   bool finished = false;
   while (!finished) {
     // Print current combination of arguments
-    std::cout << "Arguments: (";
     for (size_t i = 0; i < numArgs; ++i) {
-      if (i > 0) std::cout << ", ";
-      std::cout << argNames[i] << "=" << static_cast<int>(argumentValues[i]);
+      if (i > 0) std::cout << '|';
+      std::cout << static_cast<int>(argumentValues[i]);
     }
-    std::cout << ")\n";
 
     // Evaluate the definition with current argument values
     auto resultOpt = evaluateSynTree(definition, argNames, argumentValues);
 
     if (resultOpt) {
-      std::cout << "Result: " << static_cast<int>(resultOpt.value()) << "\n";
+      std::cout << "|" << static_cast<int>(resultOpt.value()) << "\n";
     } else {
       std::cerr << "Evaluation failed for arguments: (";
       for (size_t i = 0; i < numArgs; ++i) {
@@ -113,8 +113,72 @@ evaluateAndPrintAll(const std::string& name,
       if (i < 0) { break; }
     }
   }
+}
 
-  std::cout << "Evaluation complete.\n";
+namespace find {
+
+std::string
+constructMinterm(const std::vector<unsigned char>& row, size_t N)
+{
+  std::string minterm;
+  for (size_t i = 0; i < N; ++i) {
+    if (row[i] == 0) { minterm += "!"; }
+    minterm += 'a' + i;
+    if (i < N - 1) { minterm += " & "; }
+  }
+  return minterm;
+}
+
+std::pair<std::string, std::vector<std::string>>
+getBooleanExpression(const Table& table)
+{
+  std::vector<std::string> minterms;
+  std::vector<std::string> variables;
+
+  // Populate the variable names
+  for (size_t i = 0; i < table.N; ++i) {
+    variables.push_back(std::string(1, 'a' + i));
+  }
+
+  // Construct minterms
+  for (size_t i = 0; i < table.M; ++i) {
+    if (table.output[i] == 1) {
+      std::vector<unsigned char> row(table.input.begin() + i * table.N,
+                                     table.input.begin() + (i + 1) * table.N);
+      minterms.push_back(constructMinterm(row, table.N));
+    }
+  }
+
+  // Combine minterms into an expression
+  std::string expression;
+  for (size_t i = 0; i < minterms.size(); ++i) {
+    expression += "(" + minterms[i] + ")";
+    if (i < minterms.size() - 1) { expression += " | "; }
+  }
+
+  // Return the expression and the variable names
+  return std::make_pair(expression, variables);
+}
+
+int
+testFind()
+{
+  Table table;
+  table.N = 4;
+  table.M = 16;
+  table.input = { 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1,
+                  0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1,
+                  1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1,
+                  1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1 };
+  table.output = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0 };
+
+  std::string booleanExpression = getBooleanExpression(table).first;
+  std::cout << "Boolean Expression: " << booleanExpression << std::endl;
+  for (auto i : getBooleanExpression(table).second)
+    std::cout << i << ' ';
+
+  return 0;
+}
 }
 
 void
@@ -137,21 +201,37 @@ interperate(Command command)
       std::vector<unsigned char> values = command.values;
       SynTree* definition;
 
+      if (programNameSpace.size() == 0) {
+        std::cout << "RUNTIME ERROR: could not find definition for " << name
+                  << " in scope\n";
+        return;
+      }
+
       for (auto i : programNameSpace)
         if (i.name == name) {
           definition = i.definition;
           arguments = i.argNames;
+          break;
         }
+
+      // printSyntaxTree(definition);
+
+      if (arguments.size() != values.size()) {
+        std::cerr << "SYNTAX ERROR: incomplete RUN command definition\n";
+        return;
+      }
 
       if (definition == nullptr) {
         std::cerr << "EVALUATION ERROR: function " << name << " undefined\n";
+        return;
       }
 
       std::optional<unsigned char> answer =
         evaluateSynTree(definition, arguments, values);
 
       if (answer.has_value())
-        std::cout << "RESULT: " << (size_t)answer.value() << '\n';
+        std::cout << "EVALUATION RUN: " << static_cast<int>(answer.value())
+                  << '\n';
 
       return;
     }
@@ -167,15 +247,22 @@ interperate(Command command)
       std::vector<std::string> arguments;
       SynTree* definition;
 
+      if (programNameSpace.size() == 0) {
+        std::cout << "RUNTIME ERROR: could not find definition for " << name
+                  << " in scope\n";
+        return;
+      }
       for (auto i : programNameSpace) {
         if (i.name == name) {
           arguments = i.argNames;
           definition = i.definition;
+          break;
         }
       }
 
       if (arguments.size() == 0) {
         std::cerr << "EVALUATION ERROR: function " << name << " undefined\n";
+        return;
       }
 
       evaluateAndPrintAll(name, arguments, definition);
@@ -184,16 +271,67 @@ interperate(Command command)
 
     case CommandType::TRIVIAL: return;
 
-    case CommandType::FIND: return;
+    case CommandType::EXIT: exit(0);
+
+    case CommandType::FIND: {
+      std::string functionName;
+      { // Gen a random function name
+        size_t length = (rand() % 9) + 1;
+        const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
+        const size_t alphabetSize = sizeof(alphabet) - 1;
+
+        for (size_t i = 0; i < length; ++i) {
+          functionName += alphabet[rand() % alphabetSize];
+        }
+      }
+      auto boolExpr = find::getBooleanExpression(command.table);
+      std::string rawDef = "DEFINE " + functionName + "(";
+      for (size_t i = 0; i < boolExpr.second.size() - 1; ++i) {
+        rawDef += boolExpr.second[i] + ", ";
+      }
+      rawDef += boolExpr.second[boolExpr.second.size() - 1];
+      rawDef += "): ";
+      rawDef += "\"" + boolExpr.first + "\"\n";
+      std::string filename = "." + functionName + ".txt";
+
+      { // save definition
+        std::ofstream outFile(filename);
+        if (outFile.is_open()) {
+          outFile << rawDef;
+          outFile.close();
+        } else {
+          std::cerr << "Unable to open file";
+        }
+      }
+
+      { // read file with command
+        FILE* infile;
+        infile = fopen(filename.c_str(), "r");
+        // infile = fopen("/dev/stdin", "r"); // Open stdin for reading
+        if (infile == NULL) {
+          std::cerr << "ERROR: Could not open file\n";
+          exit(1);
+        } else {
+          std::cout << "INFO: File successfully loaded\n";
+        }
+
+        std::vector<Token>* tokens = tokenizer(infile);
+        auto command = parser(0, tokens);
+        interperate(command.second);
+      }
+      std::cout << "EVALUATION FIND: formula found: " << boolExpr.first << ' '
+                << " with name: " << functionName << '\n';
+    };
   }
 }
 
 int
 main()
 {
-  std::string fileName = "./examples/ic1.txt";
+  std::string fileName = "./examples/find.txt";
   FILE* infile;
   infile = fopen(fileName.c_str(), "r");
+  // infile = fopen("/dev/stdin", "r"); // Open stdin for reading
   if (infile == NULL) {
     std::cerr << "ERROR: Could not open file\n";
     exit(1);
@@ -203,17 +341,16 @@ main()
 
   std::vector<Token>* tokens = tokenizer(infile);
   auto command = parser(0, tokens);
-
   interperate(command.second);
+
+  for (;;) {
+    command = parser(command.first, tokens);
+    interperate(command.second);
+  }
+
   // printSyntaxTree(programNameSpace.at(0).definition);
-
-  std::cout << command.first << '\n';
   // printTokens(*tokens);
-  command = parser(command.first, tokens);
-  command = parser(command.first, tokens);
-  interperate(command.second);
 
-  fclose(infile);
   delete tokens;
   return 0;
 }

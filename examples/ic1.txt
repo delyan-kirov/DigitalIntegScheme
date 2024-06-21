@@ -1,3 +1,3 @@
 DEFINE ic1(a, b): "a & b"
 ALL ic1
-RUN ic1(1, 0)
+RUN ic1(1, 1)

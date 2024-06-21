@@ -47,6 +47,7 @@ enum class CommandType
   FIND,
   CLEAR,
   TRIVIAL,
+  EXIT,
 };
 
 // Structure for table representation

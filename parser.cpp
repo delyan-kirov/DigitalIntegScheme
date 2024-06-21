@@ -40,6 +40,7 @@ enum class CommandType
   FIND,
   CLEAR,
   TRIVIAL,
+  EXIT,
 };
 
 struct SynTree
@@ -326,7 +327,7 @@ parseFindCommand(const std::vector<Token>& tokens, size_t& idx)
   table->N = table->input.size() / table->output.size();
   table->M = table->output.size();
 
-  printTable(*table); // DEBUG
+  // printTable(*table); // DEBUG
   if (powerOf(2, table->N) != table->M) {
     std::cerr
       << "PARSE ERROR: the table defined with FIND command is invalid\n";
@@ -482,7 +483,9 @@ parseRunCommand(const std::vector<Token>& tokens, size_t& idx)
   // std::cout << values.size();
 
   // Return Command object
-  return Command{ .type = CommandType::RUN, .values = values, .name = "" };
+  return Command{ .type = CommandType::RUN,
+                  .values = values,
+                  .name = definitionName };
 }
 
 inline static Command
@@ -506,8 +509,8 @@ std::pair<size_t, Command>
 parser(size_t idx, std::vector<Token>* tokens)
 {
   if (idx >= tokens->size()) {
-    std::cerr << "SYNTAX ERROR: No command found\n";
-    return std::pair(idx, Command());
+    // std::cerr << "SYNTAX ERROR: No command found\n";
+    return std::pair(idx, Command{ .type = CommandType::EXIT });
   }
 
   TokenType commandTypeRaw = tokens->at(idx++).type;
