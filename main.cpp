@@ -1,13 +1,8 @@
-#include "./interpreter.h"
+#include "interpreter.h"
 #include "parser.h"
 #include <cstdlib>
 #include <iostream>
 #include <utility>
-
-#if 0
-  g++ -g -o main main.cpp tokenizer.cpp parser.cpp interpreter.cpp && ./main && rm ./main && exit
-;
-#endif // 0
 
 int
 main(int argc, char* argv[])

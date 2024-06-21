@@ -2,8 +2,6 @@
 #define PARSER_H
 
 #include "tokenizer.h"
-#include <string>
-#include <vector>
 
 // Forward declarations
 struct Token;

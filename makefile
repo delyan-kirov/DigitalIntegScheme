@@ -20,7 +20,7 @@ test:
 	@./main ./examples/ic2.txt > /dev/null 2>&1
 	@./main ./examples/findWithFile.txt > /dev/null 2>&1
 	@./main ./examples/find.txt > /dev/null 2>&1
-	echo "INFO: All tests passed"
+	@echo "INFO: All tests passed"
 
 clean:
 	rm -f $(OBJS)

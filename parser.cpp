@@ -1,14 +1,8 @@
 #include "tokenizer.h"
 #include <cstddef>
 #include <cstdio>
-#include <cstdlib>
 #include <iostream>
-#include <string>
 #include <utility>
-#include <vector>
-#if 0
-  g++ -g -o parser parser.cpp tokenizer.cpp && ./parser && rm ./parser && exit;
-#endif // 0
 
 enum class OperationType
 {
@@ -22,7 +16,7 @@ enum class AlgebraType
   VALUE,
   OPERATION,
   VARIABLE,
-  NONE // Default state
+  NONE
 };
 
 struct Algebra
@@ -175,10 +169,9 @@ struct Command
   std::string name = "";
 };
 
+// Forward declaration
 static SynTree*
 parseExpression(const std::vector<Token>& tokens, size_t& idx);
-
-// Forward declaration
 
 inline static SynTree*
 parseFactor(const std::vector<Token>& tokens, size_t& idx)
@@ -526,12 +519,6 @@ parseRunCommand(const std::vector<Token>& tokens, size_t& idx)
     return Command{ nullptr };
   }
 
-  // for (auto i : values) {
-  //   std::cout << (size_t)i << ' ';
-  // }
-  // std::cout << values.size();
-
-  // Return Command object
   return Command{ .type = CommandType::RUN,
                   .values = values,
                   .name = definitionName };

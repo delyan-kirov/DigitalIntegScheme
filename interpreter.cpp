@@ -5,11 +5,6 @@
 #include <iostream>
 #include <optional>
 
-#if 0
-  g++ -g -o interpreter interpreter.cpp tokenizer.cpp parser.cpp && ./interpreter && rm ./interpreter && exit
-;
-#endif // 0
-
 struct FunctionDefinition
 {
   std::string name;
@@ -304,34 +299,3 @@ interpreter(Command command)
     };
   }
 }
-
-// int
-// main()
-// {
-//   std::string fileName = "./examples/findWithFile.txt";
-//   FILE* infile;
-//   infile = fopen(fileName.c_str(), "r");
-//   // infile = fopen("/dev/stdin", "r"); // Open stdin for reading
-//   if (infile == NULL) {
-//     std::cerr << "ERROR: Could not open file\n";
-//     exit(1);
-//   } else {
-//     std::cout << "INFO: File successfully loaded\n";
-//   }
-//
-//   std::vector<Token>* tokens = tokenizer(infile);
-//   auto command = parser(0, tokens);
-//   interpreter(command.second);
-//
-//   for (;;) {
-//     command = parser(command.first, tokens);
-//     if (command.second.type == CommandType::TRIVIAL) continue;
-//     interpreter(command.second);
-//   }
-//
-//   // printSyntaxTree(programNameSpace.at(0).definition);
-//   // printTokens(*tokens);
-//
-//   delete tokens;
-//   return 0;
-// }

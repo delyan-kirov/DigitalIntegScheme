@@ -1,11 +1,6 @@
-#if 0
-  g++ -g -o tokenizer tokenizer.cpp && ./tokenizer && rm ./tokenizer && exit;
-#endif // 0
-
 #include <cctype>
 #include <cstdlib>
 #include <iostream>
-#include <string>
 #include <vector>
 
 // Enum for token types
