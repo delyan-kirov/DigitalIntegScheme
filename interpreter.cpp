@@ -1,15 +1,12 @@
 #include "parser.h"
 #include "tokenizer.h"
 #include <cstddef>
-#include <cstdlib>
-#include <fstream>
+#include <cstdio>
 #include <iostream>
 #include <optional>
-#include <string>
-#include <vector>
 
 #if 0
-  g++ -g -o interperate interperate.cpp tokenizer.cpp parser.cpp && ./interperate && rm ./interperate && exit
+  g++ -g -o interpreter interpreter.cpp tokenizer.cpp parser.cpp && ./interpreter && rm ./interpreter && exit
 ;
 #endif // 0
 
@@ -63,7 +60,7 @@ evaluateSynTree(SynTree* node,
   return std::nullopt;
 }
 
-void
+static void
 evaluateAndPrintAll(const std::string& name,
                     const std::vector<std::string>& arguments,
                     SynTree* definition)
@@ -116,7 +113,7 @@ evaluateAndPrintAll(const std::string& name,
 
 namespace find {
 
-std::string
+static std::string
 constructMinterm(const std::vector<unsigned char>& row, size_t N)
 {
   std::string minterm;
@@ -128,7 +125,7 @@ constructMinterm(const std::vector<unsigned char>& row, size_t N)
   return minterm;
 }
 
-std::pair<std::string, std::vector<std::string>>
+static std::pair<std::string, std::vector<std::string>>
 getBooleanExpression(const Table& table)
 {
   std::vector<std::string> minterms;
@@ -159,29 +156,10 @@ getBooleanExpression(const Table& table)
   return std::make_pair(expression, variables);
 }
 
-int
-testFind()
-{
-  Table table;
-  table.N = 4;
-  table.M = 16;
-  table.input = { 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1,
-                  0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1,
-                  1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1,
-                  1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1 };
-  table.output = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0 };
-
-  std::string booleanExpression = getBooleanExpression(table).first;
-  std::cout << "Boolean Expression: " << booleanExpression << std::endl;
-  for (auto i : getBooleanExpression(table).second)
-    std::cout << i << ' ';
-
-  return 0;
-}
 }
 
 void
-interperate(Command command)
+interpreter(Command command)
 {
   switch (command.type) {
 
@@ -238,6 +216,9 @@ interperate(Command command)
     case CommandType::CLEAR: {
       programNameSpace.clear();
       programNameSpace.resize(0);
+      for (auto i : programNameSpace) {
+        if (i.definition != nullptr) i.definition->destroy();
+      }
       return;
     }
 
@@ -294,10 +275,10 @@ interperate(Command command)
       std::string filename = "." + functionName + ".txt";
 
       { // save definition
-        std::ofstream outFile(filename);
-        if (outFile.is_open()) {
-          outFile << rawDef;
-          outFile.close();
+        FILE* outFile = fopen(filename.c_str(), "w");
+        if (outFile) {
+          fprintf(outFile, "%s", rawDef.c_str());
+          fclose(outFile);
         } else {
           std::cerr << "Unable to open file";
         }
@@ -316,7 +297,7 @@ interperate(Command command)
 
         std::vector<Token>* tokens = tokenizer(infile);
         auto command = parser(0, tokens);
-        interperate(command.second);
+        interpreter(command.second);
       }
       std::cout << "EVALUATION FIND: formula found: " << boolExpr.first << ' '
                 << " with name: " << functionName << '\n';
@@ -324,33 +305,33 @@ interperate(Command command)
   }
 }
 
-int
-main()
-{
-  std::string fileName = "./examples/findWithFile.txt";
-  FILE* infile;
-  infile = fopen(fileName.c_str(), "r");
-  // infile = fopen("/dev/stdin", "r"); // Open stdin for reading
-  if (infile == NULL) {
-    std::cerr << "ERROR: Could not open file\n";
-    exit(1);
-  } else {
-    std::cout << "INFO: File successfully loaded\n";
-  }
-
-  std::vector<Token>* tokens = tokenizer(infile);
-  auto command = parser(0, tokens);
-  interperate(command.second);
-
-  for (;;) {
-    command = parser(command.first, tokens);
-    if (command.second.type == CommandType::TRIVIAL) continue;
-    interperate(command.second);
-  }
-
-  // printSyntaxTree(programNameSpace.at(0).definition);
-  // printTokens(*tokens);
-
-  delete tokens;
-  return 0;
-}
+// int
+// main()
+// {
+//   std::string fileName = "./examples/findWithFile.txt";
+//   FILE* infile;
+//   infile = fopen(fileName.c_str(), "r");
+//   // infile = fopen("/dev/stdin", "r"); // Open stdin for reading
+//   if (infile == NULL) {
+//     std::cerr << "ERROR: Could not open file\n";
+//     exit(1);
+//   } else {
+//     std::cout << "INFO: File successfully loaded\n";
+//   }
+//
+//   std::vector<Token>* tokens = tokenizer(infile);
+//   auto command = parser(0, tokens);
+//   interpreter(command.second);
+//
+//   for (;;) {
+//     command = parser(command.first, tokens);
+//     if (command.second.type == CommandType::TRIVIAL) continue;
+//     interpreter(command.second);
+//   }
+//
+//   // printSyntaxTree(programNameSpace.at(0).definition);
+//   // printTokens(*tokens);
+//
+//   delete tokens;
+//   return 0;
+// }

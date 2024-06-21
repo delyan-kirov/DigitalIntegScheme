@@ -87,7 +87,7 @@ tokenizer(FILE* file)
 
   int c;
   while ((c = fgetc(file)) != EOF) {
-    std::cout << (char)c;
+    // std::cout << (char)c;
     if (isalnum(c) || c == '.') {
       tokenName += (char)c;
     } else if (c == '&') {
@@ -138,39 +138,3 @@ tokenizer(FILE* file)
   }
   return tokens;
 }
-
-// Function to test the tokenizer
-static void
-test_tokenizer(const std::string& fileName)
-{
-  std::cout << "TEST: tokenizer\n";
-  FILE* infile;
-  if (fileName.empty()) {
-    infile = stdin; // Use stdin if no file name is provided
-  } else {
-    infile = fopen(fileName.c_str(), "r");
-    if (infile == NULL) {
-      std::cerr << "ERROR: Could not open file\n";
-      exit(1);
-    } else {
-      std::cout << "INFO: File successfully loaded\n";
-    }
-  }
-
-  auto tokens = tokenizer(infile);
-  printTokens(*tokens);
-  if (infile != stdin) { fclose(infile); }
-  delete tokens;
-}
-
-// int
-// main()
-// {
-//   // test_tokenizer("./examples/ic1.txt");
-//   // test_tokenizer("./examples/ic2.txt");
-//   // test_tokenizer("./examples/ic3.txt");
-//   // test_tokenizer("./examples/find.txt");
-//   test_tokenizer("./examples/findWithFile.csv");
-//   // test_tokenizer("");
-//   return 0;
-// }

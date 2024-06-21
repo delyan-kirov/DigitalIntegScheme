@@ -58,6 +58,18 @@ struct SynTree
     , right(rightNode)
   {
   }
+  void destroy()
+  {
+    // Recursively delete left and right subtrees
+    if (this->left != nullptr) {
+      delete this->left;
+      left = nullptr; // Optional: Set to nullptr after deletion
+    }
+    if (this->right != nullptr) {
+      delete this->right;
+      right = nullptr; // Optional: Set to nullptr after deletion
+    }
+  }
 };
 
 static size_t
@@ -71,7 +83,7 @@ powerOf(size_t a, size_t b)
   return result;
 }
 
-OperationType
+static OperationType
 tokenToOpType(const TokenType& tokenType)
 {
   switch (tokenType) {
@@ -85,7 +97,8 @@ tokenToOpType(const TokenType& tokenType)
     }
   }
 }
-std::string
+
+static std::string
 printAlgebraType(const Algebra& val)
 {
   switch (val.type) {
@@ -109,7 +122,7 @@ struct Table
   std::vector<unsigned char> output = std::vector<unsigned char>();
 };
 
-void
+static void
 printSyntaxTree(const SynTree* node, int depth = 0)
 {
   if (!node) return;
@@ -120,7 +133,7 @@ printSyntaxTree(const SynTree* node, int depth = 0)
   printSyntaxTree(node->right, depth + 1);
 }
 
-void
+static void
 printTable(const Table& table)
 {
   // Ensure that input size is a multiple of N and output size is M
@@ -582,54 +595,3 @@ parser(size_t idx, std::vector<Token>* tokens)
       return std::pair(idx, Command{ .type = CommandType::TRIVIAL });
   }
 }
-
-// TODO: Make tests
-// TODO: Handle memory
-
-// int
-// main()
-// {
-//   std::string fileName = "./examples/findWithFile.txt";
-//   FILE* infile;
-//   infile = fopen(fileName.c_str(), "r");
-//   if (infile == NULL) {
-//     std::cerr << "ERROR: Could not open file\n";
-//     exit(1);
-//   } else {
-//     std::cout << "INFO: File successfully loaded\n";
-//   }
-//
-//   std::vector<Token>* tokens = tokenizer(infile);
-//   printTokens(*tokens);
-//   size_t newIdx = 0;
-//   parser(newIdx, tokens);
-//   fclose(infile);
-//   delete tokens;
-//   return 0;
-// }
-
-// int
-// main()
-// {
-//   // Example tokens for "a & (b | c) & !d"
-//   std::vector<Token> tokens = {
-//     { TokenType::QMARK, 0, "" },     { TokenType::VAR_NAME, 0, "a" },
-//     { TokenType::AND, 0, "" },       { TokenType::PAREN_L, 0, "" },
-//     { TokenType::VAR_NAME, 0, "b" }, { TokenType::OR, 0, "" },
-//     { TokenType::VAR_NAME, 0, "c" }, { TokenType::PAREN_R, 0, "" },
-//     { TokenType::AND, 0, "" },       { TokenType::NOT, 0, "" },
-//     { TokenType::VAR_NAME, 0, "d" }, { TokenType::QMARK, 0, "" }
-//   };
-//
-//   int idx = 0;
-//   SynTree* syntaxTree = parseExpression(tokens, idx);
-//
-//   if (syntaxTree) {
-//     std::cout << "Parsed syntax tree:\n";
-//     printSyntaxTree(syntaxTree);
-//   } else {
-//     std::cerr << "SYNTAX ERROR: Failed to parse the expression\n";
-//   }
-//
-//   return 0;
-// }

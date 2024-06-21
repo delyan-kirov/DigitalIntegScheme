@@ -79,38 +79,20 @@ struct SynTree
   SynTree(const Algebra& value,
           SynTree* leftNode = nullptr,
           SynTree* rightNode = nullptr);
+
+  void destroy()
+  {
+    // Recursively delete left and right subtrees
+    if (this->left != nullptr) {
+      delete this->left;
+      left = nullptr; // Optional: Set to nullptr after deletion
+    }
+    if (this->right != nullptr) {
+      delete this->right;
+      right = nullptr; // Optional: Set to nullptr after deletion
+    }
+  }
 };
-
-// Function declarations
-size_t
-powerOf(size_t a, size_t b);
-
-OperationType
-tokenToOpType(const TokenType& tokenType);
-
-std::string
-printAlgebraType(const Algebra& val);
-
-void
-printSyntaxTree(const SynTree* node, int depth = 0);
-
-void
-printTable(const Table& table);
-
-SynTree*
-parseExpression(const std::vector<Token>& tokens, size_t& idx);
-
-Command
-parseFindCommand(const std::vector<Token>& tokens, size_t& idx);
-
-Command
-parseDefCommand(const std::vector<Token>& tokens, size_t& idx);
-
-Command
-parseRunCommand(const std::vector<Token>& tokens, size_t& idx);
-
-Command
-parseAllCommand(const std::vector<Token>& tokens, size_t& idx);
 
 std::pair<size_t, Command>
 parser(size_t idx, std::vector<Token>* tokens);

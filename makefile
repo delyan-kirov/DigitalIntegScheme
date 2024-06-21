@@ -1,30 +1,26 @@
-# Default compiler
-CC = g++
+CXX = g++
+CXXFLAGS = -g
+TARGET = main
+SRCS = main.cpp tokenizer.cpp parser.cpp interpreter.cpp
+OBJS = $(SRCS:.cpp=.o)
 
-# Compiler flags
-CFLAGS = -Wall -Wextra -O2
+.PHONY: all build test clean
 
-# Source files
-SRC = main.cpp
+# Default target
+all: build clean test
 
-# Output directory and binary name
-BUILD_DIR = build
-TARGET = $(BUILD_DIR)/main
+build: $(TARGET)
 
-# Build the target (default)
-$(TARGET): $(SRC) | $(BUILD_DIR)
-	$(CC) $(CFLAGS) -o $(TARGET) $(SRC)
+$(TARGET): $(OBJS)
+	$(CXX) $(CXXFLAGS) -o $@ $^
 
-# Ensure the build directory exists
-$(BUILD_DIR):
-	mkdir -p $(BUILD_DIR)
+test:
+	@./main ./examples/ic1.txt > /dev/null 2>&1
+	@./main ./examples/ic3.txt > /dev/null 2>&1
+	@./main ./examples/ic2.txt > /dev/null 2>&1
+	@./main ./examples/findWithFile.txt > /dev/null 2>&1
+	@./main ./examples/find.txt > /dev/null 2>&1
+	echo "INFO: All tests passed"
 
-# Clean build files
 clean:
-	rm -rf $(BUILD_DIR)
-
-# Phony targets
-.PHONY: clean rebuild
-
-# Rebuild target
-rebuild: clean $(TARGET)
+	rm -f $(OBJS)
