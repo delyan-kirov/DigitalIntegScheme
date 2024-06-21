@@ -16,7 +16,49 @@ enum class OperationType
   NOT,
 };
 
-size_t
+enum class AlgebraType
+{
+  VALUE,
+  OPERATION,
+  VARIABLE,
+  NONE // Default state
+};
+
+struct Algebra
+{
+  AlgebraType type;
+  unsigned char value;
+  OperationType operation;
+  std::string variable;
+};
+
+enum class CommandType
+{
+  DEFINE,
+  RUN,
+  ALL,
+  FIND,
+  CLEAR,
+  TRIVIAL,
+};
+
+struct SynTree
+{
+  Algebra val;
+  SynTree* left;
+  SynTree* right;
+
+  SynTree(const Algebra& value,
+          SynTree* leftNode = nullptr,
+          SynTree* rightNode = nullptr)
+    : val(value)
+    , left(leftNode)
+    , right(rightNode)
+  {
+  }
+};
+
+static size_t
 powerOf(size_t a, size_t b)
 {
   size_t result = 1;
@@ -41,23 +83,6 @@ tokenToOpType(const TokenType& tokenType)
     }
   }
 }
-
-enum class AlgebraType
-{
-  VALUE,
-  OPERATION,
-  VARIABLE,
-  NONE // Default state
-};
-
-struct Algebra
-{
-  AlgebraType type;
-  unsigned char value;
-  OperationType operation;
-  std::string variable;
-};
-
 std::string
 printAlgebraType(const Algebra& val)
 {
@@ -73,32 +98,6 @@ printAlgebraType(const Algebra& val)
     default: return "Unknown AlgebraType";
   }
 }
-
-struct SynTree
-{
-  Algebra val;
-  SynTree* left;
-  SynTree* right;
-
-  SynTree(const Algebra& value,
-          SynTree* leftNode = nullptr,
-          SynTree* rightNode = nullptr)
-    : val(value)
-    , left(leftNode)
-    , right(rightNode)
-  {
-  }
-};
-
-enum class CommandType
-{
-  DEFINE,
-  RUN,
-  ALL,
-  FIND,
-  CLEAR,
-  TRIVIAL,
-};
 
 struct Table
 {
@@ -158,18 +157,15 @@ struct Command
   std::vector<std::string> arguments;
   std::vector<unsigned char> values;
   Table table;
-  std::string name = nullptr;
+  std::string name = "";
 };
 
-std::vector<std::pair<std::vector<std::string>, SynTree*>> programNameSpace;
-std::vector<std::string> programNameSpaceKey;
-
-SynTree*
+static SynTree*
 parseExpression(const std::vector<Token>& tokens, size_t& idx);
 
 // Forward declaration
 
-SynTree*
+inline static SynTree*
 parseFactor(const std::vector<Token>& tokens, size_t& idx)
 {
   if (idx >= tokens.size()) { return nullptr; }
@@ -215,7 +211,7 @@ parseFactor(const std::vector<Token>& tokens, size_t& idx)
   }
 }
 
-SynTree*
+inline static SynTree*
 parseTerm(const std::vector<Token>& tokens, size_t& idx)
 {
   SynTree* node = parseFactor(tokens, idx);
@@ -237,7 +233,7 @@ parseTerm(const std::vector<Token>& tokens, size_t& idx)
   return node;
 }
 
-SynTree*
+inline static SynTree*
 parseExpression(const std::vector<Token>& tokens, size_t& idx)
 {
   if (tokens.at(idx).type == TokenType::QMARK &&
@@ -264,7 +260,7 @@ parseExpression(const std::vector<Token>& tokens, size_t& idx)
   return node;
 }
 
-Command
+inline static Command
 parseFindCommand(const std::vector<Token>& tokens, size_t& idx)
 {
   CommandType commandType = CommandType::FIND;
@@ -340,7 +336,7 @@ parseFindCommand(const std::vector<Token>& tokens, size_t& idx)
   return Command{ .type = CommandType::FIND, .table = *table, .name = "" };
 }
 
-Command
+static Command
 parseDefCommand(const std::vector<Token>& tokens, size_t& idx)
 {
   CommandType commandType = CommandType::DEFINE;
@@ -422,16 +418,14 @@ parseDefCommand(const std::vector<Token>& tokens, size_t& idx)
     };
   }
 
-  printSyntaxTree(definition);
-  programNameSpace.push_back(std::pair(*arguments, definition));
-  programNameSpaceKey.push_back(definitionName);
+  // printSyntaxTree(definition);
   return Command{ .definition = definition,
                   .type = CommandType::DEFINE,
                   .arguments = *arguments,
                   .name = definitionName };
 }
 
-Command
+static Command
 parseRunCommand(const std::vector<Token>& tokens, size_t& idx)
 {
   if (tokens.at(idx).type != TokenType::VAR_NAME) {
@@ -491,7 +485,7 @@ parseRunCommand(const std::vector<Token>& tokens, size_t& idx)
   return Command{ .type = CommandType::RUN, .values = values, .name = "" };
 }
 
-Command
+inline static Command
 parseAllCommand(const std::vector<Token>& tokens, size_t& idx)
 {
   if (tokens.at(idx).type != TokenType::VAR_NAME) {
@@ -508,76 +502,71 @@ parseAllCommand(const std::vector<Token>& tokens, size_t& idx)
                   .name = name };
 }
 
-Command
-parser(std::vector<Token>* tokens)
+std::pair<size_t, Command>
+parser(size_t idx, std::vector<Token>* tokens)
 {
-  size_t idx = 0;
-
   if (idx >= tokens->size()) {
     std::cerr << "SYNTAX ERROR: No command found\n";
-    return Command{ nullptr };
+    return std::pair(idx, Command());
   }
 
   TokenType commandTypeRaw = tokens->at(idx++).type;
 
   switch (commandTypeRaw) {
     case TokenType::DEFINE: {
-      return parseDefCommand(*tokens, idx);
+      return std::pair(idx, parseDefCommand(*tokens, idx));
     } break; // END DEFINE
 
     case TokenType::RUN: {
-      return parseRunCommand(*tokens, idx);
+      return std::pair(idx, parseRunCommand(*tokens, idx));
     } break; // END RUN
 
     case TokenType::ALL: {
-      return parseAllCommand(*tokens, idx);
+      return std::pair(idx, parseAllCommand(*tokens, idx));
     } break; // end ALL
 
     case TokenType::FIND: {
-      return parseFindCommand(*tokens, idx);
+      return std::pair(idx, parseFindCommand(*tokens, idx));
     } break; // END FIND
 
     case TokenType::NEWLINE: {
-      return Command{ .type = CommandType::TRIVIAL };
+      return std::pair(idx, Command{ .type = CommandType::TRIVIAL });
     } break; // END NEWLINE
 
     case TokenType::CLEAR: {
-      return Command{ .type = CommandType::CLEAR };
+      return std::pair(idx, Command{ .type = CommandType::CLEAR });
     } break; // CLEAR
 
     default:
       std::cerr << "SYNTAX ERROR: Command must start with DEFINE, RUN, CLEAR "
                    "or ALL\n";
-      return Command{ nullptr };
+      return std::pair(idx, Command{ .type = CommandType::TRIVIAL });
   }
 }
 
 // TODO: Make tests
 // TODO: Handle memory
 
-int
-main()
-{
-  std::string fileName = "./examples/ic2.txt";
-  FILE* infile;
-  infile = fopen(fileName.c_str(), "r");
-  if (infile == NULL) {
-    std::cerr << "ERROR: Could not open file\n";
-    exit(1);
-  } else {
-    std::cout << "INFO: File successfully loaded\n";
-  }
-
-  std::vector<Token>* tokens = tokenizer(infile);
-  // printTokens(*tokens);
-  parser(tokens);
-  fclose(infile);
-  printSyntaxTree(programNameSpace.at(0).second);
-  for (auto i : programNameSpace.at(0).first)
-    std::cout << i << ' ';
-  delete tokens;
-  return 0;
-}
+// int
+// main()
+// {
+//   std::string fileName = "./examples/ic2.txt";
+//   FILE* infile;
+//   infile = fopen(fileName.c_str(), "r");
+//   if (infile == NULL) {
+//     std::cerr << "ERROR: Could not open file\n";
+//     exit(1);
+//   } else {
+//     std::cout << "INFO: File successfully loaded\n";
+//   }
+//
+//   std::vector<Token>* tokens = tokenizer(infile);
+//   printTokens(*tokens);
+//   parser(tokens);
+//   fclose(infile);
+//   delete tokens;
+//   return 0;
+// }
 
 // int
 // main()

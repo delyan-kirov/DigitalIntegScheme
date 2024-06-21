@@ -1,3 +1,2 @@
 DEFINE ic2(a, b, c, d): "a & (b | c) & !d | 0"
 RUN ic2(1, 0)
-ALL ic2
