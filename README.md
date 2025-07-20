@@ -46,7 +46,4 @@ The program is interpreted, using the following strategy:
 A command is a logical unit that starts with `DEFINE`, `RUN`, `CLEAR`, `FIND`, `ALL`.
 There is a special unit `TRIVIAL` which does nothing.
 
-I used the syntax tree linked from the wikipedia page for parsing the program.
-
 The following `std` structures were also used `vector`, `string`, `optional`, `pair`.
-I did see the comment, unfortunately I was too far into the project.
