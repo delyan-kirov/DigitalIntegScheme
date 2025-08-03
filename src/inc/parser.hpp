@@ -1,9 +1,22 @@
+/*-----------------------------MODULE INFO-----------------------------/
+ * \file parser.hpp
+ * \author Delyan Kirov
+ * \brief Interface for the parser
+ *---------------------------------------------------------------------*/
+
 #ifndef PARSER_H
 #define PARSER_H
 
+/*----------------------------------------------------------------------/
+ *--------------------------MODULE INCLUDES-----------------------------/
+ *---------------------------------------------------------------------*/
 #include "tokenizer.hpp"
 
-// Enum for operation types
+/*----------------------------------------------------------------------/
+ *---------------------------MODULE TYPES-------------------------------/
+ *---------------------------------------------------------------------*/
+
+//! \brief Enum for operation types
 enum class OperationType
 {
   AND,
@@ -11,7 +24,7 @@ enum class OperationType
   NOT,
 };
 
-// Enum for algebraic types
+//! \brief Enum for algebraic types
 enum class AlgebraType
 {
   VALUE,
@@ -20,7 +33,7 @@ enum class AlgebraType
   NONE // Default state
 };
 
-// Structure for algebraic expressions
+//! \brief for algebraic expressions
 struct Algebra
 {
   AlgebraType type;
@@ -51,8 +64,7 @@ to_string (const Algebra &val)
 }
 }
 
-// Structure for commands
-
+//! \brief Enum for the types of commands
 enum class CommandType
 {
   DEFINE,
@@ -64,13 +76,13 @@ enum class CommandType
   EXIT,
 };
 
-// Structure for table representation
+//! \brief Structure for table representation
 struct Table
 {
   size_t N = 0;
   size_t M = 0;
-  std::vector<unsigned char> input {};
-  std::vector<unsigned char> output {};
+  std::vector<unsigned char> input{};
+  std::vector<unsigned char> output{};
 };
 
 namespace std
@@ -121,7 +133,7 @@ to_string (const Table &table)
 }
 }
 
-// Structure for syntax tree nodes
+//! \brief Structure for syntax tree nodes
 struct SynTree
 {
   Algebra val;
@@ -140,27 +152,37 @@ struct SynTree
     if (this->left != nullptr)
       {
         delete this->left;
-        left = nullptr; // Optional: Set to nullptr after deletion
+        left = nullptr;
       }
     if (this->right != nullptr)
       {
         delete this->right;
-        right = nullptr; // Optional: Set to nullptr after deletion
+        right = nullptr;
       }
   }
 };
 
+//! \brief Structure for handling commands
 struct Command
 {
-  SynTree* definition = nullptr;
+  SynTree *definition = nullptr;
   CommandType type = CommandType::TRIVIAL;
-  std::vector<std::string> arguments {};
-  std::vector<unsigned char> values {};
-  Table table {};
+  std::vector<std::string> arguments{};
+  std::vector<unsigned char> values{};
+  Table table{};
   std::string name = "";
 };
 
+/*----------------------------------------------------------------------/
+ *--------------------------MODULE FUNCTIONS----------------------------/
+ *---------------------------------------------------------------------*/
+
+//! \brief Parser
 extern std::pair<size_t, Command> parser (size_t idx,
                                           std::vector<Token> *tokens);
 
 #endif // PARSER_H
+
+/*----------------------------------------------------------------------/
+ *-----------------------------------EOF--------------------------------/
+ *---------------------------------------------------------------------*/

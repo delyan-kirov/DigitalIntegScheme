@@ -1,8 +1,8 @@
-/*
+/*-----------------------------MODULE INFO-----------------------------/
  * \file tokenizer.hpp
  * \author Delyan Kirov
  * \brief Interface for the tokenizer
- */
+ *---------------------------------------------------------------------*/
 
 #ifndef TOKENIZER_H
 #define TOKENIZER_H
@@ -102,3 +102,7 @@ extern void printTokens (const std::vector<Token> &tokens);
 extern std::vector<Token> *tokenizer (FILE *file);
 
 #endif // TOKENIZER_H
+
+/*----------------------------------------------------------------------/
+ *-----------------------------------EOF--------------------------------/
+ *---------------------------------------------------------------------*/
