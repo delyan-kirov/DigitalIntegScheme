@@ -17,13 +17,13 @@ You should now have an executable called main.
 You can run it with a file like so:
 
 ```bash
-./main ./examples/ic1.txt
+./main.exe ./examples/ic1.txt
 ```
 
 It's possible to run it through stdin by not providing a file:
 
 ```bash
-./main
+./main.exe
 ```
 
 If ran through stdin, you must escape with `ctr-d`, as `fopen` blocks.
