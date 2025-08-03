@@ -15,11 +15,12 @@
 #include <vector>
 
 /*----------------------------------------------------------------------/
- *------------------------------MODULE IMPL-----------------------------/
+ *------------------------------MODULE EXPR-----------------------------/
  *---------------------------------------------------------------------*/
 
-//! \brief Function to print tokens
-void
+namespace Tokenizer
+{
+extern void
 printTokens (const std::vector<Token> &tokens)
 {
   for (size_t i = 0; i < tokens.size (); ++i)
@@ -30,13 +31,10 @@ printTokens (const std::vector<Token> &tokens)
     }
 }
 
-/*----------------------------------------------------------------------/
- *------------------------------MODULE EXPR-----------------------------/
- *---------------------------------------------------------------------*/
-
 //! \brief Function to tokenize the input file
-std::vector<Token> *
-tokenizer (FILE *file)
+//! \todo Handle comments
+extern std::vector<Token> *
+tokenize (FILE *file)
 {
   auto tokens = new std::vector<Token>;
   Token newToken;
@@ -135,6 +133,7 @@ tokenizer (FILE *file)
     }
   return tokens;
 }
+} // end namespace Tokenizer
 
 /*----------------------------------------------------------------------/
  *-----------------------------------EOF--------------------------------/

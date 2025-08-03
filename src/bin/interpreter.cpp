@@ -15,19 +15,28 @@
 #include <optional>
 
 /*----------------------------------------------------------------------/
- *---------------------------MODULE GLOBALS-----------------------------/
+ *--------------------------FOREIGN GLOBALS-----------------------------/
  *---------------------------------------------------------------------*/
 
-std::vector<FunctionDefinition> programNameSpace;
+std::vector<Interpreter::Func> programNameSpace;
 
+namespace Interpreter
+{
+namespace // Helper functions
+{
 /*----------------------------------------------------------------------/
  *------------------------------MODULE IMPL-----------------------------/
  *---------------------------------------------------------------------*/
 
 std::optional<unsigned char>
-evaluateSynTree (SynTree *node, const std::vector<std::string> &argNames,
+evaluateSynTree (Parser::SynTree *node,
+                 const std::vector<std::string> &argNames,
                  const std::vector<unsigned char> &values)
 {
+  using Parser::Algebra;
+  using Parser::AlgebraType;
+  using Parser::OperationType;
+
   if (!node) return 0;
 
   if (node->val.type == AlgebraType::VALUE)
@@ -70,7 +79,7 @@ evaluateSynTree (SynTree *node, const std::vector<std::string> &argNames,
 static void
 evaluateAndPrintAll (const std::string &name,
                      const std::vector<std::string> &arguments,
-                     SynTree *definition)
+                     Parser::SynTree *definition)
 {
   std::vector<std::string> argNames = arguments;
   size_t numArgs = argNames.size ();
@@ -142,7 +151,7 @@ constructMinterm (const std::vector<unsigned char> &row, size_t N)
 }
 
 static std::pair<std::string, std::vector<std::string> >
-getBooleanExpression (const Table &table)
+getBooleanExpression (const Parser::Table &table)
 {
   std::vector<std::string> minterms;
   std::vector<std::string> variables;
@@ -178,20 +187,24 @@ getBooleanExpression (const Table &table)
 
   return std::make_pair (expression, variables);
 }
+} // end namespace
 
 /*----------------------------------------------------------------------/
  *------------------------------MODULE EXPR-----------------------------/
  *---------------------------------------------------------------------*/
 
-void
-interpreter (Command command)
+//! \brief Function that interprets parser commands
+extern void
+interpret (Parser::Command command)
 {
+  using Parser::Command;
+  using Parser::CommandType;
+
   switch (command.type)
     {
-
     case CommandType::DEFINE:
       {
-        FunctionDefinition def{ command.name, command.arguments,
+        Func def{ command.name, command.arguments,
                                 command.definition };
         programNameSpace.push_back (def);
         return;
@@ -202,7 +215,7 @@ interpreter (Command command)
         std::vector<std::string> arguments;
         std::string name = command.name;
         std::vector<unsigned char> values = command.values;
-        SynTree *definition;
+        Parser::SynTree *definition;
 
         if (programNameSpace.size () == 0)
           {
@@ -257,7 +270,7 @@ interpreter (Command command)
       {
         std::string name = command.name;
         std::vector<std::string> arguments;
-        SynTree *definition;
+        Parser::SynTree *definition;
 
         if (programNameSpace.size () == 0)
           {
@@ -340,15 +353,16 @@ interpreter (Command command)
               std::cout << "INFO: File successfully loaded\n";
             }
 
-          std::vector<Token> *tokens = tokenizer (infile);
-          auto command = parser (0, tokens);
-          interpreter (command.second);
+          std::vector<Tokenizer::Token> *tokens = Tokenizer::tokenize (infile);
+          auto command = Parser::parse (0, tokens);
+          interpret (command.second);
         }
         std::cout << "EVALUATION FIND: formula found: " << boolExpr.first
                   << ' ' << " with name: " << functionName << '\n';
       };
     }
 }
+} // end namespace Interpreter
 
 /*----------------------------------------------------------------------/
  *-----------------------------------EOF--------------------------------/

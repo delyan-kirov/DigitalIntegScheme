@@ -40,10 +40,10 @@ main (int argc, char *argv[])
       return 1;
     }
 
-  std::vector<Token> *tokens;
+  std::vector<Tokenizer::Token> *tokens;
   try
     {
-      tokens = tokenizer (infile);
+      tokens = Tokenizer::tokenize (infile);
     }
   catch (...)
     {
@@ -53,14 +53,14 @@ main (int argc, char *argv[])
 
   try
     {
-      auto command = parser (0, tokens);
-      interpreter (command.second);
+      auto command = Parser::parse (0, tokens);
+      Interpreter::interpret (command.second);
 
       for (;;)
         {
-          command = parser (command.first, tokens);
-          if (command.second.type == CommandType::TRIVIAL) continue;
-          interpreter (command.second);
+          command = Parser::parse (command.first, tokens);
+          if (command.second.type == Parser::CommandType::TRIVIAL) continue;
+          Interpreter::interpret (command.second);
         }
     }
   catch (...)

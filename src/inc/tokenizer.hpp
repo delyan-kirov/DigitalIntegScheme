@@ -17,6 +17,8 @@
  *---------------------------MODULE TYPES-------------------------------/
  *---------------------------------------------------------------------*/
 
+namespace Tokenizer
+{
 //! \brief Enum for token types
 enum class TokenType
 {
@@ -39,11 +41,36 @@ enum class TokenType
   NOT,
 };
 
-namespace std
+//! \brief Struct for tokens
+struct Token
 {
+  TokenType type;
+  unsigned char val;
+  std::string name;
+};
+
+/*----------------------------------------------------------------------/
+ *--------------------------MODULE FUNCTIONS----------------------------/
+ *---------------------------------------------------------------------*/
+
+//! \brief Function to print tokens
+extern void printTokens (const std::vector<Token> &tokens);
+
+//! \brief Function to tokenize the input file
+extern std::vector<Token> *tokenize (FILE *file);
+}
+
+/*----------------------------------------------------------------------/
+ *---------------------------MODULE EXNTENDS----------------------------/
+ *---------------------------------------------------------------------*/
+
+namespace std // extend std::to_string for Tokenizer
+{
+//! \brief Implement std::to_string for Tokenizer::TokenType
 inline std::string
-to_string (const TokenType &type)
+to_string (const Tokenizer::TokenType &type)
 {
+  using Tokenizer::TokenType;
   switch (type)
     {
     case TokenType::PAREN_L : return "PAREN_L";
@@ -66,21 +93,12 @@ to_string (const TokenType &type)
     default                 : return "UNKNOWN";
     }
 }
-}
 
-//! \brief Struct for tokens
-struct Token
-{
-  TokenType type;
-  unsigned char val;
-  std::string name;
-};
-
-namespace std
-{
+//! \brief Implement std::to_string for Tokenizer::Token
 inline string
-to_string (const Token &token)
+to_string (const Tokenizer::Token &token)
 {
+  using Tokenizer::Token;
   string result = "TOKEN: " + std::to_string (token.type) + " " + token.name;
   int token_value = static_cast<int> (token.val);
   if (token_value != 2)
@@ -90,16 +108,6 @@ to_string (const Token &token)
   return result;
 }
 } // namespace std
-
-/*----------------------------------------------------------------------/
- *--------------------------MODULE FUNCTIONS----------------------------/
- *---------------------------------------------------------------------*/
-
-//! \brief print tokens
-extern void printTokens (const std::vector<Token> &tokens);
-
-//! \brief Function to tokenize the input file
-extern std::vector<Token> *tokenizer (FILE *file);
 
 #endif // TOKENIZER_H
 

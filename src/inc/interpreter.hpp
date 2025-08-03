@@ -16,22 +16,34 @@
 #include <iostream>
 #include <optional>
 
+namespace Interpreter
+{
 /*----------------------------------------------------------------------/
  *---------------------------MODULE TYPES-------------------------------/
  *---------------------------------------------------------------------*/
 
 //! \brief Define the FunctionDefinition struct
-struct FunctionDefinition
+struct Func
 {
   std::string name;
   std::vector<std::string> argNames;
-  SynTree *definition;
+  Parser::SynTree *definition;
 };
 
+/*----------------------------------------------------------------------/
+ *---------------------------MODULE FUNCTIONS---------------------------/
+ *---------------------------------------------------------------------*/
+
+//! \brief Function that interprets parser commands
+extern void interpret (Parser::Command command);
+}
+
+/*----------------------------------------------------------------------/
+ *------------------------------FOREIGN DATA----------------------------/
+ *---------------------------------------------------------------------*/
+
 //! \brief Declare the global program namespace
-extern std::vector<FunctionDefinition> programNameSpace;
-//! \brief Function to interpret commands
-extern void interpreter (Command command);
+extern std::vector<Interpreter::Func> programNameSpace;
 
 #endif // INTERPRETER_H
 

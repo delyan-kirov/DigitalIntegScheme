@@ -13,6 +13,10 @@
 #include <iostream>
 #include <utility>
 
+namespace Parser
+{
+namespace
+{
 /*----------------------------------------------------------------------/
  *---------------------------MODULE DEFINES-----------------------------/
  *---------------------------------------------------------------------*/
@@ -209,7 +213,7 @@ parseFindCommand (const std::vector<Token> &tokens, size_t &idx)
           std::cerr << "ERROR: could not open file: " << fileName << '\n';
           return Command{ nullptr };
         }
-      std::vector<Token> *tokens = tokenizer (file);
+      std::vector<Token> *tokens = Tokenizer::tokenize (file);
       idx += 2; // must move the index forward twice
       size_t newIdx = 0;
       return parseFindCommand (*tokens, newIdx);
@@ -507,13 +511,15 @@ parseAllCommand (const std::vector<Token> &tokens, size_t &idx)
                   .type = CommandType::ALL,
                   .name = name };
 }
+}
 
 /*----------------------------------------------------------------------/
  *------------------------------MODULE EXPR-----------------------------/
  *---------------------------------------------------------------------*/
 
-std::pair<size_t, Command>
-parser (size_t idx, std::vector<Token> *tokens)
+//! \brief Parse tokens
+extern std::pair<size_t, Command>
+parse (size_t idx, std::vector<Token> *tokens)
 {
   if (idx >= tokens->size ())
     {
@@ -566,6 +572,7 @@ parser (size_t idx, std::vector<Token> *tokens)
                    "or ALL\n";
       return std::pair (idx, Command{ .type = CommandType::TRIVIAL });
     }
+}
 }
 
 /*----------------------------------------------------------------------/

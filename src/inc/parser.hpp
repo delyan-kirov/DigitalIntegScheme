@@ -16,6 +16,11 @@
  *---------------------------MODULE TYPES-------------------------------/
  *---------------------------------------------------------------------*/
 
+namespace Parser
+{
+using Tokenizer::Token;
+using Tokenizer::TokenType;
+
 //! \brief Enum for operation types
 enum class OperationType
 {
@@ -42,28 +47,6 @@ struct Algebra
   std::string variable;
 };
 
-namespace std
-{
-inline std::string
-to_string (const Algebra &val)
-{
-  switch (val.type)
-    {
-    case AlgebraType::VALUE: return std::to_string (val.value);
-    case AlgebraType::OPERATION:
-      switch (val.operation)
-        {
-        case OperationType::AND: return "&";
-        case OperationType::OR : return "|";
-        case OperationType::NOT: return "!";
-        default                : return "UNKNOWN ALGEBRA OPERATION TYPE";
-        }
-    case AlgebraType::VARIABLE: return val.variable;
-    default                   : return "UNKNOWN ALGEBRATYPE";
-    }
-}
-}
-
 //! \brief Enum for the types of commands
 enum class CommandType
 {
@@ -84,54 +67,6 @@ struct Table
   std::vector<unsigned char> input{};
   std::vector<unsigned char> output{};
 };
-
-namespace std
-{
-inline std::string
-to_string (const Table &table)
-{
-  // Ensure that input size is a multiple of N and output size is M
-  if (table.input.size () % table.N != 0 || table.output.size () != table.M)
-    {
-      return "Invalid table data: input size must be a multiple of N and "
-             "output size must be M.\n";
-    }
-
-  // Calculate number of rows
-  size_t rows = table.input.size () / table.N;
-
-  // Build the table string
-  std::string result;
-
-  result += "Table (N=" + std::to_string (table.N)
-            + ", M=" + std::to_string (table.M) + "):\n";
-
-  // Add header
-  for (size_t i = 0; i < table.N; ++i)
-    {
-      result += 'i' + std::to_string (i + 1) + "\t";
-    }
-  result += "out\n";
-
-  // Add rows
-  for (size_t i = 0; i < rows; ++i)
-    {
-      for (size_t j = 0; j < table.N; ++j)
-        {
-          result += std::to_string (
-                        static_cast<int> (table.input[i * table.N + j]))
-                    + "\t";
-        }
-      if (i < table.M)
-        {
-          result += std::to_string (static_cast<int> (table.output[i]));
-        }
-      result += "\n";
-    }
-
-  return result;
-}
-}
 
 //! \brief Structure for syntax tree nodes
 struct SynTree
@@ -177,9 +112,85 @@ struct Command
  *--------------------------MODULE FUNCTIONS----------------------------/
  *---------------------------------------------------------------------*/
 
-//! \brief Parser
-extern std::pair<size_t, Command> parser (size_t idx,
+//! \brief Parse tokens
+extern std::pair<size_t, Command> parse (size_t idx,
                                           std::vector<Token> *tokens);
+}
+
+/*----------------------------------------------------------------------/
+ *---------------------------MODULE EXNTENDS----------------------------/
+ *---------------------------------------------------------------------*/
+
+namespace std // Extend Parser with std
+{
+//! \brief Implement std::to_string for Parser::Algebra
+inline string
+to_string (const Parser::Algebra &val)
+{
+  using namespace Parser;
+  switch (val.type)
+    {
+    case AlgebraType::VALUE: return std::to_string (val.value);
+    case AlgebraType::OPERATION:
+      switch (val.operation)
+        {
+        case OperationType::AND: return "&";
+        case OperationType::OR : return "|";
+        case OperationType::NOT: return "!";
+        default                : return "UNKNOWN ALGEBRA OPERATION TYPE";
+        }
+    case AlgebraType::VARIABLE: return val.variable;
+    default                   : return "UNKNOWN ALGEBRATYPE";
+    }
+}
+
+//! \brief Implement std::to_string for Parser::Table
+inline std::string
+to_string (const Parser::Table &table)
+{
+  using namespace Parser;
+  // Ensure that input size is a multiple of N and output size is M
+  if (table.input.size () % table.N != 0 || table.output.size () != table.M)
+    {
+      return "Invalid table data: input size must be a multiple of N and "
+             "output size must be M.\n";
+    }
+
+  // Calculate number of rows
+  size_t rows = table.input.size () / table.N;
+
+  // Build the table string
+  std::string result;
+
+  result += "Table (N=" + std::to_string (table.N)
+            + ", M=" + std::to_string (table.M) + "):\n";
+
+  // Add header
+  for (size_t i = 0; i < table.N; ++i)
+    {
+      result += 'i' + std::to_string (i + 1) + "\t";
+    }
+  result += "out\n";
+
+  // Add rows
+  for (size_t i = 0; i < rows; ++i)
+    {
+      for (size_t j = 0; j < table.N; ++j)
+        {
+          result += std::to_string (
+                        static_cast<int> (table.input[i * table.N + j]))
+                    + "\t";
+        }
+      if (i < table.M)
+        {
+          result += std::to_string (static_cast<int> (table.output[i]));
+        }
+      result += "\n";
+    }
+
+  return result;
+}
+} // end namespace std
 
 #endif // PARSER_H
 
