@@ -8,18 +8,13 @@ On linux, try:
 make
 ```
 
-which will also run some tests that you can find in `./examples`.
-Otherwise:
-
-```bash
-g++ -g -o main main.cpp tokenizer.cpp parser.cpp interpreter.cpp
-```
+which will also run some tests that you can find in `./src/tst`.
 
 You should now have an executable called main.
 
 ## Run
 
-You can run it with a filem like so:
+You can run it with a file like so:
 
 ```bash
 ./main ./examples/ic1.txt
@@ -45,5 +40,3 @@ The program is interpreted, using the following strategy:
 
 A command is a logical unit that starts with `DEFINE`, `RUN`, `CLEAR`, `FIND`, `ALL`.
 There is a special unit `TRIVIAL` which does nothing.
-
-The following `std` structures were also used `vector`, `string`, `optional`, `pair`.

@@ -2,3 +2,6 @@
 *.a
 *build
 .*
+.clang-format
+main
+*.exe

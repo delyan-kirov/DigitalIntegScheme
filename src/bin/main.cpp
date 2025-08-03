@@ -1,5 +1,5 @@
-#include "interpreter.h"
-#include "parser.h"
+#include "interpreter.hpp"
+#include "parser.hpp"
 #include <cstdlib>
 #include <iostream>
 #include <utility>

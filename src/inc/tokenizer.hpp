@@ -36,15 +36,11 @@ struct Token
   std::string name;
 };
 
-// Function to print tokens
-std::string
-printTokenType(const TokenType& type);
-
-void
-printTokens(const std::vector<Token>& tokens);
+// Functions to print tokens
+extern std::string printTokenType (const TokenType &type);
+extern void printTokens (const std::vector<Token> &tokens);
 
 // Function to tokenize the input file
-std::vector<Token>*
-tokenizer(FILE* file);
+extern std::vector<Token> *tokenizer (FILE *file);
 
 #endif // TOKENIZER_H

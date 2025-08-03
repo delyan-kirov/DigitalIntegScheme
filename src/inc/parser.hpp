@@ -1,7 +1,7 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-#include "tokenizer.h"
+#include "tokenizer.hpp"
 
 // Forward declarations
 struct Token;
@@ -59,7 +59,7 @@ struct Table
 
 struct Command
 {
-  SynTree* definition = nullptr;
+  SynTree *definition = nullptr;
   CommandType type = CommandType::TRIVIAL;
   std::vector<std::string> arguments;
   std::vector<unsigned char> values;
@@ -71,28 +71,29 @@ struct Command
 struct SynTree
 {
   Algebra val;
-  SynTree* left;
-  SynTree* right;
+  SynTree *left;
+  SynTree *right;
 
-  SynTree(const Algebra& value,
-          SynTree* leftNode = nullptr,
-          SynTree* rightNode = nullptr);
+  SynTree (const Algebra &value, SynTree *leftNode = nullptr,
+           SynTree *rightNode = nullptr);
 
-  void destroy()
+  void
+  destroy ()
   {
     // Recursively delete left and right subtrees
-    if (this->left != nullptr) {
-      delete this->left;
-      left = nullptr; // Optional: Set to nullptr after deletion
-    }
-    if (this->right != nullptr) {
-      delete this->right;
-      right = nullptr; // Optional: Set to nullptr after deletion
-    }
+    if (this->left != nullptr)
+      {
+        delete this->left;
+        left = nullptr; // Optional: Set to nullptr after deletion
+      }
+    if (this->right != nullptr)
+      {
+        delete this->right;
+        right = nullptr; // Optional: Set to nullptr after deletion
+      }
   }
 };
 
-std::pair<size_t, Command>
-parser(size_t idx, std::vector<Token>* tokens);
+extern std::pair<size_t, Command> parser (size_t idx, std::vector<Token> *tokens);
 
 #endif // PARSER_H

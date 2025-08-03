@@ -1,8 +1,7 @@
 #ifndef INTERPRETER_H
 #define INTERPRETER_H
 
-#include "parser.h"
-#include "tokenizer.h"
+#include "parser.hpp"
 #include <cstddef>
 #include <cstdio>
 #include <iostream>
@@ -13,13 +12,12 @@ struct FunctionDefinition
 {
   std::string name;
   std::vector<std::string> argNames;
-  SynTree* definition;
+  SynTree *definition;
 };
 
 // Declare the global program namespace
 extern std::vector<FunctionDefinition> programNameSpace;
 // Function to interpret commands
-void
-interpreter(Command command);
+extern void interpreter (Command command);
 
 #endif // INTERPRETER_H

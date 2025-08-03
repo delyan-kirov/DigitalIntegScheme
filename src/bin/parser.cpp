@@ -1,4 +1,4 @@
-#include "tokenizer.h"
+#include "tokenizer.hpp"
 #include <cstddef>
 #include <cstdio>
 #include <iostream>
@@ -65,6 +65,8 @@ struct SynTree
     }
   }
 };
+
+constexpr const char *fileNameBase = "./src/tst/csvFiles/"; 
 
 static size_t
 powerOf(size_t a, size_t b)
@@ -289,7 +291,7 @@ parseFindCommand(const std::vector<Token>& tokens, size_t& idx)
                 << printTokenType(tokens.at(idx).type) << '\n';
       return Command{ nullptr };
     }
-    std::string fileName = "./csvFiles/" + tokens.at(idx).name;
+    std::string fileName = fileNameBase + tokens.at(idx).name;
     FILE* file = fopen(fileName.c_str(), "r");
     if (file == nullptr) {
       std::cerr << "ERROR: could not open file: " << fileName << '\n';
