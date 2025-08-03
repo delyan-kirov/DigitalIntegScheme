@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -g
+CXXFLAGS = -std=c++20 -g -Wall -Wextra -Wpedantic
 
 TARGET = main.exe
 SRC_DIR = ./src/bin/

@@ -3,12 +3,6 @@
 
 #include "tokenizer.hpp"
 
-// Forward declarations
-struct Token;
-struct SynTree;
-struct Table;
-struct Command;
-
 // Enum for operation types
 enum class OperationType
 {
@@ -35,6 +29,28 @@ struct Algebra
   std::string variable;
 };
 
+namespace std
+{
+inline std::string
+to_string (const Algebra &val)
+{
+  switch (val.type)
+    {
+    case AlgebraType::VALUE: return std::to_string (val.value);
+    case AlgebraType::OPERATION:
+      switch (val.operation)
+        {
+        case OperationType::AND: return "&";
+        case OperationType::OR : return "|";
+        case OperationType::NOT: return "!";
+        default                : return "UNKNOWN ALGEBRA OPERATION TYPE";
+        }
+    case AlgebraType::VARIABLE: return val.variable;
+    default                   : return "UNKNOWN ALGEBRATYPE";
+    }
+}
+}
+
 // Structure for commands
 
 enum class CommandType
@@ -51,21 +67,59 @@ enum class CommandType
 // Structure for table representation
 struct Table
 {
-  size_t N;
-  size_t M;
-  std::vector<unsigned char> input;
-  std::vector<unsigned char> output;
+  size_t N = 0;
+  size_t M = 0;
+  std::vector<unsigned char> input {};
+  std::vector<unsigned char> output {};
 };
 
-struct Command
+namespace std
 {
-  SynTree *definition = nullptr;
-  CommandType type = CommandType::TRIVIAL;
-  std::vector<std::string> arguments;
-  std::vector<unsigned char> values;
-  Table table;
-  std::string name = nullptr;
-};
+inline std::string
+to_string (const Table &table)
+{
+  // Ensure that input size is a multiple of N and output size is M
+  if (table.input.size () % table.N != 0 || table.output.size () != table.M)
+    {
+      return "Invalid table data: input size must be a multiple of N and "
+             "output size must be M.\n";
+    }
+
+  // Calculate number of rows
+  size_t rows = table.input.size () / table.N;
+
+  // Build the table string
+  std::string result;
+
+  result += "Table (N=" + std::to_string (table.N)
+            + ", M=" + std::to_string (table.M) + "):\n";
+
+  // Add header
+  for (size_t i = 0; i < table.N; ++i)
+    {
+      result += 'i' + std::to_string (i + 1) + "\t";
+    }
+  result += "out\n";
+
+  // Add rows
+  for (size_t i = 0; i < rows; ++i)
+    {
+      for (size_t j = 0; j < table.N; ++j)
+        {
+          result += std::to_string (
+                        static_cast<int> (table.input[i * table.N + j]))
+                    + "\t";
+        }
+      if (i < table.M)
+        {
+          result += std::to_string (static_cast<int> (table.output[i]));
+        }
+      result += "\n";
+    }
+
+  return result;
+}
+}
 
 // Structure for syntax tree nodes
 struct SynTree
@@ -75,8 +129,10 @@ struct SynTree
   SynTree *right;
 
   SynTree (const Algebra &value, SynTree *leftNode = nullptr,
-           SynTree *rightNode = nullptr);
-
+           SynTree *rightNode = nullptr)
+      : val (value), left (leftNode), right (rightNode)
+  {
+  }
   void
   destroy ()
   {
@@ -94,6 +150,17 @@ struct SynTree
   }
 };
 
-extern std::pair<size_t, Command> parser (size_t idx, std::vector<Token> *tokens);
+struct Command
+{
+  SynTree* definition = nullptr;
+  CommandType type = CommandType::TRIVIAL;
+  std::vector<std::string> arguments {};
+  std::vector<unsigned char> values {};
+  Table table {};
+  std::string name = "";
+};
+
+extern std::pair<size_t, Command> parser (size_t idx,
+                                          std::vector<Token> *tokens);
 
 #endif // PARSER_H

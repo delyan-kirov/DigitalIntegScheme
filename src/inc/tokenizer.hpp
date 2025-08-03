@@ -1,12 +1,23 @@
+/*
+ * \file tokenizer.hpp
+ * \author Delyan Kirov
+ * \brief Interface for the tokenizer
+ */
+
 #ifndef TOKENIZER_H
 #define TOKENIZER_H
 
-#include <cctype>
-#include <cstdlib>
+/*----------------------------------------------------------------------/
+ *--------------------------MODULE INCLUDES-----------------------------/
+ *---------------------------------------------------------------------*/
 #include <iostream>
 #include <vector>
 
-// Enum for token types
+/*----------------------------------------------------------------------/
+ *---------------------------MODULE TYPES-------------------------------/
+ *---------------------------------------------------------------------*/
+
+//! \brief Enum for token types
 enum class TokenType
 {
   PAREN_L,
@@ -28,7 +39,36 @@ enum class TokenType
   NOT,
 };
 
-// Struct for tokens
+namespace std
+{
+inline std::string
+to_string (const TokenType &type)
+{
+  switch (type)
+    {
+    case TokenType::PAREN_L : return "PAREN_L";
+    case TokenType::PAREN_R : return "PAREN_R";
+    case TokenType::DEFINE  : return "DEFINE";
+    case TokenType::RUN     : return "RUN";
+    case TokenType::FIND    : return "FIND";
+    case TokenType::CLEAR   : return "CLEAR";
+    case TokenType::ALL     : return "ALL";
+    case TokenType::VAR_NAME: return "VAR_NAME";
+    case TokenType::VAL     : return "VAL";
+    case TokenType::NEWLINE : return "NEWLINE";
+    case TokenType::COMMA   : return "COMMA";
+    case TokenType::COLS    : return "COLS";
+    case TokenType::SEMICOLS: return "SEMICOLS";
+    case TokenType::QMARK   : return "QMARK";
+    case TokenType::AND     : return "AND";
+    case TokenType::OR      : return "OR";
+    case TokenType::NOT     : return "NOT";
+    default                 : return "UNKNOWN";
+    }
+}
+}
+
+//! \brief Struct for tokens
 struct Token
 {
   TokenType type;
@@ -36,11 +76,29 @@ struct Token
   std::string name;
 };
 
-// Functions to print tokens
-extern std::string printTokenType (const TokenType &type);
+namespace std
+{
+inline string
+to_string (const Token &token)
+{
+  string result = "TOKEN: " + std::to_string (token.type) + " " + token.name;
+  int token_value = static_cast<int> (token.val);
+  if (token_value != 2)
+    {
+      result += " " + std::to_string (token_value);
+    }
+  return result;
+}
+} // namespace std
+
+/*----------------------------------------------------------------------/
+ *--------------------------MODULE FUNCTIONS----------------------------/
+ *---------------------------------------------------------------------*/
+
+//! \brief print tokens
 extern void printTokens (const std::vector<Token> &tokens);
 
-// Function to tokenize the input file
+//! \brief Function to tokenize the input file
 extern std::vector<Token> *tokenizer (FILE *file);
 
 #endif // TOKENIZER_H
