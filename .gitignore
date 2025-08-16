@@ -1,7 +1,10 @@
 .vscode
 *.a
-*build
+*.o
+*.exe
 .*
 .clang-format
 main
 *.exe
+bld/
+compile_commands.json
