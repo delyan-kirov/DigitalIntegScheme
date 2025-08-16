@@ -1,69 +1,73 @@
 #-----------------------------MODULE INFO-----------------------------/
 # \file makefile
 # \author Delyan Kirov
-# \brief Make file that build executable main.exe
+# \brief Make file that builds executable main.exe
 #---------------------------------------------------------------------*/
 
-#---------------------------------------------------------------------*/
 #-----------------------------CONFIG FLAGS-----------------------------/
-#---------------------------------------------------------------------*/
 CXX = g++
 CXXFLAGS = -std=c++20 -g -Wall -Wextra -Wpedantic
-
-
 #---------------------------------------------------------------------*/
+
 #-----------------------------SOURCE FILES-----------------------------/
-#---------------------------------------------------------------------*/
-
-TARGET = main.exe
 SRC_DIR = ./src/bin/
 INC_DIR = ./src/inc/
 BLD_DIR = ./bld/
 
 all: build test
-
-#---------------------------------------------------------------------*/
-#----------------------------------TARGETS-----------------------------/
 #---------------------------------------------------------------------*/
 
-$(TARGET): $(BLD_DIR)main.o $(BLD_DIR)interpreter.o $(BLD_DIR)parser.o $(BLD_DIR)tokenizer.o $(BLD_DIR)
-	$(CXX) $(CXXFLAGS) $(BLD_DIR)main.o $(BLD_DIR)interpreter.o $(BLD_DIR)parser.o $(BLD_DIR)tokenizer.o -o $(TARGET)
+#---------------------------------TARGETS------------------------------/
+TARGETS := main.exe
+main.exe_SRCS := main.cpp \
+				 interpreter.cpp \
+				 parser.cpp \
+				 tokenizer.cpp
 
-$(BLD_DIR)main.o: $(SRC_DIR)main.cpp
-	$(CXX) $(CXXFLAGS) -I$(INC_DIR) -I$(BLD_DIR) -c $(SRC_DIR)main.cpp -o $(BLD_DIR)main.o
+# Pattern rules for objects and dependencies
+define MAKE_TARGET_RULES
+$1_OBJS := $$($1_SRCS:%.cpp=$(BLD_DIR)%.o)
+$1_DEPS := $$($1_OBJS:.o=.d)
 
-$(BLD_DIR)interpreter.o: $(SRC_DIR)interpreter.cpp $(INC_DIR)interpreter.hpp
-	$(CXX) $(CXXFLAGS) -I$(INC_DIR) -I$(BLD_DIR) -c $(SRC_DIR)interpreter.cpp -o $(BLD_DIR)interpreter.o
+$1: $$($1_OBJS)
+	$$(CXX) $$(CXXFLAGS) $$^ -o $$@
 
-$(BLD_DIR)parser.o: $(SRC_DIR)parser.cpp $(INC_DIR)parser.hpp
-	$(CXX) $(CXXFLAGS) -I$(INC_DIR) -I$(BLD_DIR) -c $(SRC_DIR)parser.cpp -o $(BLD_DIR)parser.o
+$(BLD_DIR)%.o: $(SRC_DIR)%.cpp
+	$$(CXX) $$(CXXFLAGS) -I$$(INC_DIR) -I$$(BLD_DIR) -MMD -c $$< -o $$@
 
-$(BLD_DIR)tokenizer.o: $(SRC_DIR)tokenizer.cpp $(INC_DIR)tokenizer.hpp
-	$(CXX) $(CXXFLAGS) -I$(INC_DIR) -I$(BLD_DIR) -c $(SRC_DIR)tokenizer.cpp -o $(BLD_DIR)tokenizer.o
+-include $$($1_DEPS)
+endef
 
-# TODO: write the tests in a python script
+$(foreach tgt,$(TARGETS),$(eval $(call MAKE_TARGET_RULES,$(tgt))))
+#---------------------------------------------------------------------*/
+
+#--------------------------------TESTS---------------------------------/
 TST_DIR = ./src/tst/
-tst.SRC = ic1.txt \
-	      ic3.txt \
-	      ic2.txt \
-	      findWithFile.txt \
-	      find.txt
+tst.SRC = ic1.txt ic3.txt ic2.txt findWithFile.txt find.txt
 tst.SRC.DEP = $(addprefix $(TST_DIR), $(tst.SRC))
-test: $(TARGET)
-	$(foreach test_case, $(tst.SRC.DEP), ./$(TARGET) $(test_case)) 
+
+test: $(TARGETS)
+	@for test_case in $(tst.SRC.DEP); do \
+		./$(TARGETS) $$test_case; \
+	done
 	@echo "INFO: All tests passed"
+#---------------------------------------------------------------------*/
 
+#-----------------------------BUILD DIRECTORY--------------------------/
 $(BLD_DIR):
-	mkdir $(BLD_DIR)
+	mkdir -p $(BLD_DIR)
 
+build: $(BLD_DIR) $(TARGETS)
+#---------------------------------------------------------------------*/
+
+#-----------------------------PHONY TARGETS----------------------------/
 .PHONY: all build test clean bear 
-
-build: $(BLD_DIR) $(TARGET)
 
 bear:
 	bear -- make clean all
 
 clean:
-	rm -f $(TARGET)
+	rm -f $(TARGETS)
 	rm -rf $(BLD_DIR)
 	rm -f compile_commands.json
+#---------------------------------------------------------------------*/
